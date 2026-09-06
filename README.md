@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Khedma.ai — Web
 
-## Getting Started
+**The web frontend for Khedma.ai** — a multilingual AI job-search agent. Type or chat in Darija, French, Arabic, or English to search jobs, review AI-ranked matches, and generate tailored applications.
 
-First, run the development server:
+> This is a client for a self-hosted backend — it talks to your own running instance of [khedma-ai-backend](#), not a shared/hosted API. See that repo for the full architecture and the legal/scraping disclaimer.
+
+---
+
+## What it does
+
+- 🗣️ **One conversational search box** — no separate "input search" vs "chat," typing a keyword or a full sentence in any of the four supported languages goes through the same pipeline. See the backend docs, section 5.
+- 🎯 **Ranked match cards** — each result shows the job, a 0-100 match score, and a one-line reason it was matched.
+- 📄 **Application view** — review and download the AI-generated tailored CV + cover letter per job before applying yourself (this tool never auto-submits applications).
+- 🌍 **Local/International awareness** — reflects the scope your backend already filters by, so you're only ever looking at realistically-applicable roles.
+
+## Tech stack
+
+Next.js (App Router) · React · Tailwind CSS · TypeScript
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 18+
+- A running instance of [khedma-ai-backend](#) (locally or on your own server)
+
+### Setup
 
 ```bash
+npm install
+cp .env.local.example .env.local   # set NEXT_PUBLIC_API_URL to your backend's URL
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App runs at `http://localhost:3000`. Make sure your backend is running first (default: `http://localhost:8000`) — the frontend has no functionality of its own without it.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+├── layout.tsx          root layout, fonts, metadata
+├── page.tsx            main search page (chat box + results)
+└── globals.css         Tailwind entrypoint
+lib/
+└── api.ts              typed fetch client for the backend API
+```
 
-## Learn More
+## Environment variables
 
-To learn more about Next.js, take a look at the following resources:
+| Variable              | Description                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_API_URL` | Base URL of your running khedma-ai-backend instance (e.g. `http://localhost:8000`, or your deployed backend's URL) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roadmap
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [x] Search UI (conversational input, ranked match cards)
+- [ ] Filter chips (scope, remote, country, seniority) — see backend docs section 13; these pre-fill the same structured query the chat box produces, not a separate search path
+- [ ] Application view (tailored CV / cover letter download)
+- [ ] Mobile app ([khedma-ai-mobile](#)) — separate repo, same backend API
 
-## Deploy on Vercel
+## Related repos
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Backend / API**: [khedma-ai-backend](#) — architecture, data model, and full design docs live there
+- **Mobile**: planned, not started
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+Issues and PRs welcome. This frontend should stay a thin client — business logic (matching, language detection, scraping) belongs in the backend, not here.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
