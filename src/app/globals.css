@@ -1,26 +1,76 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-heading);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Khedma.ai design system — dark-first, warm palette (see CLAUDE.md). */
+  --background: #15130f;
+  --foreground: #f1e9dc;
+  --card: #1c1a15;
+  --card-foreground: #f1e9dc;
+  --popover: #1c1a15;
+  --popover-foreground: #f1e9dc;
+  --primary: #c98a3e;
+  --primary-foreground: #15130f;
+  --secondary: #2f6b5e;
+  --secondary-foreground: #f1e9dc;
+  --muted: #29261f;
+  --muted-foreground: #8a8072;
+  --accent: #29261f;
+  --accent-foreground: #f1e9dc;
+  --destructive: #c9573e;
+  --border: #322e26;
+  --input: #322e26;
+  --ring: #c98a3e;
+  --radius: 0.625rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Applied to any text that may be Arabic/Darija script (chat replies, RTL input)
+   so it renders in a font matched to the design system instead of the browser's
+   default Arabic fallback — Inter/Fraunces have no Arabic glyph coverage. */
+.font-arabic-aware {
+  font-family: var(--font-inter), var(--font-arabic), sans-serif;
 }
