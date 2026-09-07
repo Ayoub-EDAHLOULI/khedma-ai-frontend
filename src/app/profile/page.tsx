@@ -18,6 +18,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { TagInput } from "@/components/form/TagInput";
+import { CountryInput } from "@/components/form/CountryInput";
 import {
   profileFormSchema,
   type ProfileFormValues,
@@ -218,10 +219,10 @@ export default function ProfilePage() {
                   control={control}
                   name="target_countries"
                   render={({ field }) => (
-                    <TagInput
+                    <CountryInput
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="FR, DE, …"
+                      placeholder="Search countries…"
                       className="bg-background"
                     />
                   )}
@@ -261,7 +262,7 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-3.5">
                 <Label className="font-medium text-foreground/90">Skills</Label>
                 <Controller
                   control={control}
