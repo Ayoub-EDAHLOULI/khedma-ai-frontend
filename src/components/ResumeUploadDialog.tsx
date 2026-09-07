@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { FileText, Upload, X } from "lucide-react";
 import {
@@ -11,8 +12,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { profileService } from "@/services/profile.service";
 
-const ACCEPTED_TYPES = ".pdf,.doc,.docx";
+const ACCEPTED_TYPES = ".pdf,.docx";
+
+// Session-local hand-off from the parse step to the profile form — avoids
+// round-tripping the parsed resume through the backend twice (parse, then
+// save) before the user has reviewed/edited it.
+export const PARSED_RESUME_KEY = "khedma:parsed-resume";
 
 interface ResumeUploadDialogProps {
   open: boolean;
@@ -24,16 +31,27 @@ export function ResumeUploadDialog({
   onOpenChange,
 }: ResumeUploadDialogProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [parsing, setParsing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setFile(e.target.files?.[0] ?? null);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!file) return;
-    toast.info("Resume parsing isn't available yet — this is coming soon.");
-    onOpenChange(false);
+    setParsing(true);
+    try {
+      const parsed = await profileService.parseResume(file);
+      sessionStorage.setItem(PARSED_RESUME_KEY, JSON.stringify(parsed));
+      onOpenChange(false);
+      router.push("/profile?fromResume=1");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to parse resume");
+    } finally {
+      setParsing(false);
+    }
   }
 
   function handleOpenChange(next: boolean) {
@@ -51,8 +69,8 @@ export function ResumeUploadDialog({
             Upload your resume
           </DialogTitle>
           <DialogDescription className="text-[15px]">
-            PDF or Word. We&apos;ll extract your details automatically once this
-            is ready.
+            PDF or Word. We&apos;ll extract your details so you can review them
+            before saving.
           </DialogDescription>
         </DialogHeader>
 
@@ -90,8 +108,12 @@ export function ResumeUploadDialog({
           </div>
         )}
 
-        <Button onClick={handleSubmit} disabled={!file} className="w-full h-10">
-          Upload resume
+        <Button
+          onClick={handleSubmit}
+          disabled={!file || parsing}
+          className="w-full h-10"
+        >
+          {parsing ? "Reading resume…" : "Upload resume"}
         </Button>
       </DialogContent>
     </Dialog>

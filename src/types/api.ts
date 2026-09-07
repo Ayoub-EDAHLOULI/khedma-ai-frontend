@@ -27,6 +27,12 @@ export interface ProfileInput {
   preferred_languages?: string[];
 }
 
+export interface ParsedResume {
+  full_name: string;
+  skills: string[];
+  cv_text: string;
+}
+
 export interface Job {
   id: string;
   source: string;

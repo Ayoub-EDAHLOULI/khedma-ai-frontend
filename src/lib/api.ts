@@ -15,10 +15,12 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const isFormData = init?.body instanceof FormData;
+
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...init?.headers,
     },
   });
@@ -45,5 +47,13 @@ export const api = {
     request<T>(path, {
       method: "PATCH",
       body: data === undefined ? undefined : JSON.stringify(data),
+    }),
+
+  // For file uploads — request() skips the JSON Content-Type for FormData
+  // bodies so the browser can set its own multipart/form-data boundary.
+  postForm: <T>(path: string, formData: FormData) =>
+    request<T>(path, {
+      method: "POST",
+      body: formData,
     }),
 };

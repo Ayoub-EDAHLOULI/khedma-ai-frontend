@@ -25,6 +25,8 @@ import {
 import { profileService } from "@/services/profile.service";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { PARSED_RESUME_KEY } from "@/components/ResumeUploadDialog";
+import type { ParsedResume } from "@/types/api";
 
 const defaultValues: ProfileFormValues = {
   full_name: "",
@@ -54,24 +56,43 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
+    const parsedRaw = sessionStorage.getItem(PARSED_RESUME_KEY);
+    const parsed: ParsedResume | null = parsedRaw ? JSON.parse(parsedRaw) : null;
+    if (parsed) {
+      sessionStorage.removeItem(PARSED_RESUME_KEY);
+    }
+
     profileService
       .get()
-      .then((profile) =>
+      .then((profile) => {
         reset({
-          full_name: profile.full_name,
+          full_name: parsed?.full_name || profile.full_name,
           base_country: profile.base_country,
           target_countries: profile.target_countries,
-          cv_text: profile.cv_text,
-          skills: profile.skills,
+          cv_text: parsed?.cv_text || profile.cv_text,
+          skills: parsed?.skills?.length ? parsed.skills : profile.skills,
           preferred_languages: profile.preferred_languages,
-        }),
-      )
-      .catch((err) => {
-        if (!(err instanceof ApiError && err.status === 404)) {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to load profile",
-          );
+        });
+        if (parsed) {
+          toast.info("Review the details we found, then save.");
         }
+      })
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 404) {
+          if (parsed) {
+            reset({
+              ...defaultValues,
+              full_name: parsed.full_name,
+              cv_text: parsed.cv_text,
+              skills: parsed.skills,
+            });
+            toast.info("Review the details we found, then save.");
+          }
+          return;
+        }
+        toast.error(
+          err instanceof Error ? err.message : "Failed to load profile",
+        );
       })
       .finally(() => setLoading(false));
   }, [reset]);
