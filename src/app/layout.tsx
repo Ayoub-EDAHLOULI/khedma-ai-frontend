@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, Noto_Sans_Arabic } from "next/font/google";
+import { ToastContainer } from "react-toastify";
 import { ProfileButton } from "@/components/ProfileButton";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 
 const inter = Inter({
@@ -34,6 +36,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <ProfileButton />
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          closeOnClick
+          pauseOnHover
+          theme="dark"
+        />
       </body>
     </html>
   );

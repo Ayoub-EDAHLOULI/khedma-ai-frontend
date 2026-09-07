@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,10 +27,7 @@ const defaultValues: ProfileFormValues = {
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
-    "idle",
-  );
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const {
     register,
@@ -58,7 +56,7 @@ export default function ProfilePage() {
       .catch((err) => {
         // No profile yet is expected on first run — start from a blank form.
         if (!(err instanceof ApiError && err.status === 404)) {
-          setErrorMessage(
+          toast.error(
             err instanceof Error ? err.message : "Failed to load profile",
           );
         }
@@ -67,16 +65,16 @@ export default function ProfilePage() {
   }, [reset]);
 
   async function onSubmit(values: ProfileFormValues) {
-    setStatus("saving");
-    setErrorMessage(null);
+    setSaving(true);
     try {
       await profileService.save(values);
-      setStatus("saved");
+      toast.success("Profile saved.");
     } catch (err) {
-      setStatus("error");
-      setErrorMessage(
+      toast.error(
         err instanceof Error ? err.message : "Failed to save profile",
       );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -164,20 +162,9 @@ export default function ProfilePage() {
           />
         </div>
 
-        <Button
-          type="submit"
-          disabled={status === "saving"}
-          className="self-start"
-        >
-          {status === "saving" ? "Saving…" : "Save profile"}
+        <Button type="submit" disabled={saving} className="self-start">
+          {saving ? "Saving…" : "Save profile"}
         </Button>
-
-        {status === "saved" && (
-          <p className="text-sm text-secondary-foreground">Profile saved.</p>
-        )}
-        {errorMessage && (
-          <p className="text-sm text-destructive">{errorMessage}</p>
-        )}
       </form>
     </main>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { FileText, Upload, X } from "lucide-react";
 import {
   Dialog,
@@ -23,25 +24,21 @@ export function ResumeUploadDialog({
   onOpenChange,
 }: ResumeUploadDialogProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setNotice(null);
     setFile(e.target.files?.[0] ?? null);
   }
 
   function handleSubmit() {
     if (!file) return;
-    // Resume parsing (PDF/Word → structured profile fields) isn't wired up yet —
-    // this is the upload UI only, see CLAUDE.md "Future direction".
-    setNotice("Resume parsing isn't available yet — this is coming soon.");
+    toast.info("Resume parsing isn't available yet — this is coming soon.");
+    onOpenChange(false);
   }
 
   function handleOpenChange(next: boolean) {
     if (!next) {
       setFile(null);
-      setNotice(null);
     }
     onOpenChange(next);
   }
@@ -92,8 +89,6 @@ export function ResumeUploadDialog({
             </button>
           </div>
         )}
-
-        {notice && <p className="text-sm text-muted-foreground">{notice}</p>}
 
         <Button onClick={handleSubmit} disabled={!file} className="w-full h-10">
           Upload resume

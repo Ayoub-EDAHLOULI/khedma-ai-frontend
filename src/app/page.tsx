@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { MatchCard } from "@/components/search/MatchCard";
 import { AgentAvatar, type AgentState } from "@/components/search/AgentAvatar";
 import { ResumeUploadDialog } from "@/components/ResumeUploadDialog";
@@ -21,11 +22,9 @@ interface Turn {
 
 export default function Home() {
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [profileError, setProfileError] = useState(false);
   const [message, setMessage] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [searching, setSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [agentState, setAgentState] = useState<AgentState>("idle");
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>("text");
@@ -46,7 +45,9 @@ export default function Home() {
     profileService
       .get()
       .then((profile) => setProfileId(profile.id))
-      .catch(() => setProfileError(true));
+      .catch(() =>
+        toast.error("No profile found. Set up your profile before searching."),
+      );
   }, []);
 
   useEffect(() => {
@@ -60,7 +61,6 @@ export default function Home() {
     const currentMessage = message;
     setSearching(true);
     setAgentState("thinking");
-    setError(null);
 
     try {
       const result = await searchService.search({
@@ -79,7 +79,7 @@ export default function Home() {
       setAgentState("replying");
       setTimeout(() => setAgentState("idle"), 650);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed");
+      toast.error(err instanceof Error ? err.message : "Search failed");
       setAgentState("idle");
     } finally {
       setSearching(false);
@@ -116,7 +116,10 @@ export default function Home() {
           </button>
         </div>
 
-        <ResumeUploadDialog open={resumeDialogOpen} onOpenChange={setResumeDialogOpen} />
+        <ResumeUploadDialog
+          open={resumeDialogOpen}
+          onOpenChange={setResumeDialogOpen}
+        />
 
         <div
           className={cn(
@@ -203,10 +206,14 @@ export default function Home() {
                     type="button"
                     onClick={() => {
                       if (inputMode === "voice" && listening) stopListening();
-                      setInputMode((prev) => (prev === "text" ? "voice" : "text"));
+                      setInputMode((prev) =>
+                        prev === "text" ? "voice" : "text",
+                      );
                     }}
                     aria-label={
-                      inputMode === "text" ? "Switch to voice input" : "Switch to text input"
+                      inputMode === "text"
+                        ? "Switch to voice input"
+                        : "Switch to text input"
                     }
                     className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors bg-accent hover:bg-accent/70 px-3 py-1.5 rounded-full"
                   >
@@ -225,7 +232,9 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={listening ? stopListening : startListening}
-                    aria-label={listening ? "Stop recording" : "Start recording"}
+                    aria-label={
+                      listening ? "Stop recording" : "Start recording"
+                    }
                     aria-pressed={listening}
                     className={cn(
                       "rounded-full p-1.5 transition-colors",
@@ -234,7 +243,9 @@ export default function Home() {
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    <Mic className={cn("size-5", listening && "animate-pulse")} />
+                    <Mic
+                      className={cn("size-5", listening && "animate-pulse")}
+                    />
                   </button>
                 ) : (
                   <button
@@ -248,17 +259,6 @@ export default function Home() {
               </div>
             </form>
           </div>
-
-          {profileError && (
-            <p className="mt-4 text-sm text-destructive absolute bottom-4">
-              No profile found. Set up your profile before searching.
-            </p>
-          )}
-          {error && (
-            <p className="mt-4 text-sm text-destructive absolute bottom-4">
-              {error}
-            </p>
-          )}
         </div>
       </main>
     </div>
