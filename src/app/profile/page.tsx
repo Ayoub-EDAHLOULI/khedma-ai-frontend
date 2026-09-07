@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-toastify";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -130,7 +130,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading your profile…</p>
+        <Loader2 className="size-6 animate-spin text-primary" />
       </div>
     );
   }

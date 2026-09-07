@@ -32,8 +32,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${inter.variable} ${fraunces.variable} ${notoSansArabic.variable} h-full antialiased`}
+      style={{ backgroundColor: "#0f0f0f" }}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background">
         {children}
         <ProfileButton />
         <ToastContainer
