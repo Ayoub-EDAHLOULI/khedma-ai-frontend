@@ -25,10 +25,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
 
-  const body = (await response.json()) as ApiResponse<T>;
+  let body: Partial<ApiResponse<T>> = {};
+  try {
+    body = await response.json();
+  } catch {
+    // Non-JSON error body (e.g. a raw 502/504 from a proxy) — fall through
+    // to the generic message below.
+  }
 
-  if (!body.success || body.data === null) {
-    throw new ApiError(body.message, response.status, body.errors);
+  if (
+    !response.ok ||
+    !body.success ||
+    body.data === undefined ||
+    body.data === null
+  ) {
+    const message =
+      body.message ||
+      (body as unknown as { detail?: string }).detail ||
+      `Request failed (${response.status})`;
+    throw new ApiError(message, response.status, body.errors ?? []);
   }
 
   return body.data;

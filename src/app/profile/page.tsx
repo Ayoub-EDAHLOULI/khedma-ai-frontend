@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,6 +43,10 @@ const inputClasses =
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // React Strict Mode double-invokes effects in dev — this ref makes the
+  // sessionStorage read-and-clear idempotent so the second invocation doesn't
+  // see it already gone and silently fall back to the plain profile fetch.
+  const parsedResumeRef = useRef<ParsedResume | null | undefined>(undefined);
 
   const {
     register,
@@ -56,15 +60,20 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    const parsedRaw = sessionStorage.getItem(PARSED_RESUME_KEY);
-    const parsed: ParsedResume | null = parsedRaw ? JSON.parse(parsedRaw) : null;
-    if (parsed) {
-      sessionStorage.removeItem(PARSED_RESUME_KEY);
+    if (parsedResumeRef.current === undefined) {
+      const parsedRaw = sessionStorage.getItem(PARSED_RESUME_KEY);
+      parsedResumeRef.current = parsedRaw ? JSON.parse(parsedRaw) : null;
+      if (parsedResumeRef.current) {
+        sessionStorage.removeItem(PARSED_RESUME_KEY);
+      }
     }
+    const parsed = parsedResumeRef.current;
+    let cancelled = false;
 
     profileService
       .get()
       .then((profile) => {
+        if (cancelled) return;
         reset({
           full_name: parsed?.full_name || profile.full_name,
           base_country: profile.base_country,
@@ -78,6 +87,7 @@ export default function ProfilePage() {
         }
       })
       .catch((err) => {
+        if (cancelled) return;
         if (err instanceof ApiError && err.status === 404) {
           if (parsed) {
             reset({
@@ -94,7 +104,13 @@ export default function ProfilePage() {
           err instanceof Error ? err.message : "Failed to load profile",
         );
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [reset]);
 
   async function onSubmit(values: ProfileFormValues) {
