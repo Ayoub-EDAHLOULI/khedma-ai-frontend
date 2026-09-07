@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 type SpeechRecognitionConstructor = new () => SpeechRecognition;
 
@@ -16,16 +16,17 @@ function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
 interface UseSpeechInputOptions {
   lang?: string;
   onResult: (transcript: string) => void;
+  onInterimResult?: (transcript: string) => void;
 }
 
-export function useSpeechInput({ lang, onResult }: UseSpeechInputOptions) {
+export function useSpeechInput({
+  lang,
+  onResult,
+  onInterimResult,
+}: UseSpeechInputOptions) {
   const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
+  const [supported] = useState(() => getSpeechRecognitionCtor() !== null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-  useEffect(() => {
-    setSupported(getSpeechRecognitionCtor() !== null);
-  }, []);
 
   const start = useCallback(() => {
     const Ctor = getSpeechRecognitionCtor();
@@ -33,12 +34,17 @@ export function useSpeechInput({ lang, onResult }: UseSpeechInputOptions) {
 
     const recognition = new Ctor();
     recognition.lang = lang ?? "";
-    recognition.interimResults = false;
+    recognition.interimResults = Boolean(onInterimResult);
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = event.results[event.results.length - 1][0].transcript;
-      onResult(transcript);
+      const last = event.results[event.results.length - 1];
+      const transcript = last[0].transcript;
+      if (last.isFinal) {
+        onResult(transcript);
+      } else {
+        onInterimResult?.(transcript);
+      }
     };
     recognition.onend = () => setListening(false);
     recognition.onerror = () => setListening(false);
@@ -46,7 +52,7 @@ export function useSpeechInput({ lang, onResult }: UseSpeechInputOptions) {
     recognitionRef.current = recognition;
     recognition.start();
     setListening(true);
-  }, [lang, listening, onResult]);
+  }, [lang, listening, onResult, onInterimResult]);
 
   const stop = useCallback(() => {
     recognitionRef.current?.stop();

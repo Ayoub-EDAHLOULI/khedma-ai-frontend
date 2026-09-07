@@ -5,10 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { MatchCard } from "@/components/search/MatchCard";
 import { AgentAvatar, type AgentState } from "@/components/search/AgentAvatar";
+import { VoiceMode } from "@/components/search/VoiceMode";
 import { ResumeUploadDialog } from "@/components/ResumeUploadDialog";
 import { profileService } from "@/services/profile.service";
 import { searchService } from "@/services/search.service";
-import { useSpeechInput } from "@/hooks/useSpeechInput";
 import type {
   LocationScope,
   Profile,
@@ -17,9 +17,7 @@ import type {
 } from "@/types/api";
 import { countryName } from "@/lib/countries";
 import { cn } from "@/lib/utils";
-import { Plus, Mic, ChevronDown, FileUp } from "lucide-react";
-
-type InputMode = "text" | "voice";
+import { Plus, Mic, ArrowUp, ChevronDown, FileUp } from "lucide-react";
 
 interface Turn {
   message: string;
@@ -35,23 +33,12 @@ export default function Home() {
   const [searching, setSearching] = useState(false);
   const [agentState, setAgentState] = useState<AgentState>("idle");
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
-  const [inputMode, setInputMode] = useState<InputMode>("text");
   const [scope, setScope] = useState<LocationScope | null>(null);
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [country, setCountry] = useState<string | null>(null);
   const [seniority, setSeniority] = useState<Seniority | null>(null);
+  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  const handleSpeechResult = useCallback((transcript: string) => {
-    setMessage((prev) => (prev ? `${prev} ${transcript}` : transcript));
-  }, []);
-
-  const {
-    listening,
-    supported: speechSupported,
-    start: startListening,
-    stop: stopListening,
-  } = useSpeechInput({ onResult: handleSpeechResult });
 
   useEffect(() => {
     profileService
@@ -69,15 +56,10 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns]);
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!message.trim() || !profileId || searching) return;
+  const runSearch = useCallback(
+    async (currentMessage: string) => {
+      if (!profileId) throw new Error("No profile found");
 
-    const currentMessage = message;
-    setSearching(true);
-    setAgentState("thinking");
-
-    try {
       const result = await searchService.search({
         message: currentMessage,
         profile_id: profileId,
@@ -94,6 +76,21 @@ export default function Home() {
           results: result.results,
         },
       ]);
+      return result;
+    },
+    [profileId, scope, remoteOnly, country, seniority],
+  );
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!message.trim() || !profileId || searching) return;
+
+    const currentMessage = message;
+    setSearching(true);
+    setAgentState("thinking");
+
+    try {
+      await runSearch(currentMessage);
       setMessage("");
       setAgentState("replying");
       setTimeout(() => setAgentState("idle"), 650);
@@ -104,6 +101,18 @@ export default function Home() {
       setSearching(false);
     }
   }
+
+  const handleVoiceSubmit = useCallback(
+    async (transcript: string) => {
+      try {
+        return await runSearch(transcript);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Search failed");
+        throw err;
+      }
+    },
+    [runSearch],
+  );
 
   const hasSearched = turns.length > 0;
 
@@ -298,68 +307,29 @@ export default function Home() {
               <input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={
-                  inputMode === "voice" ? "Tap the mic to speak" : "Ask Khedma"
-                }
-                disabled={searching || inputMode === "voice"}
+                placeholder="Ask Khedma"
+                disabled={searching}
                 dir="auto"
                 className="flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground text-foreground disabled:opacity-50 font-arabic-aware"
               />
 
               <div className="flex items-center gap-3 pl-3 mr-1">
-                {speechSupported && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (inputMode === "voice" && listening) stopListening();
-                      setInputMode((prev) =>
-                        prev === "text" ? "voice" : "text",
-                      );
-                    }}
-                    aria-label={
-                      inputMode === "text"
-                        ? "Switch to voice input"
-                        : "Switch to text input"
-                    }
-                    className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors bg-accent hover:bg-accent/70 px-3 py-1.5 rounded-full"
-                  >
-                    {inputMode === "text" ? (
-                      <>
-                        Text <ChevronDown className="size-3.5 opacity-70" />
-                      </>
-                    ) : (
-                      <>
-                        Voice <ChevronDown className="size-3.5 opacity-70" />
-                      </>
-                    )}
-                  </button>
-                )}
-                {inputMode === "voice" ? (
-                  <button
-                    type="button"
-                    onClick={listening ? stopListening : startListening}
-                    aria-label={
-                      listening ? "Stop recording" : "Start recording"
-                    }
-                    aria-pressed={listening}
-                    className={cn(
-                      "rounded-full p-1.5 transition-colors",
-                      listening
-                        ? "text-primary"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Mic
-                      className={cn("size-5", listening && "animate-pulse")}
-                    />
-                  </button>
-                ) : (
+                <button
+                  type="button"
+                  onClick={() => setVoiceModeOpen(true)}
+                  aria-label="Open voice mode"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1.5"
+                >
+                  <Mic className="size-5" />
+                </button>
+                {message.trim() && (
                   <button
                     type="submit"
-                    disabled={!profileId || searching || !message.trim()}
-                    className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:hover:text-muted-foreground p-1.5"
+                    disabled={!profileId || searching}
+                    aria-label="Send"
+                    className="rounded-full bg-primary p-1.5 text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-50"
                   >
-                    <Mic className="size-5" />
+                    <ArrowUp className="size-5" />
                   </button>
                 )}
               </div>
@@ -367,6 +337,13 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {voiceModeOpen && (
+        <VoiceMode
+          onClose={() => setVoiceModeOpen(false)}
+          onSubmit={handleVoiceSubmit}
+        />
+      )}
     </div>
   );
 }
