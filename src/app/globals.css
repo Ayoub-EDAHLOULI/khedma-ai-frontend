@@ -104,6 +104,27 @@
   opacity: 0.75;
 }
 
+/* Blue glow behind the sidebar logo — same blur() technique as .input-glow,
+   scoped tight around the small 40px circle rather than spread like the
+   page-level glow. */
+.logo-glow {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 150%;
+  height: 150%;
+  z-index: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in oklch, var(--primary), transparent 25%) 0%,
+    transparent 70%
+  );
+  filter: blur(15px);
+  opacity: 0.85;
+}
+
 /* Hide scrollbar for cleaner UI */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;

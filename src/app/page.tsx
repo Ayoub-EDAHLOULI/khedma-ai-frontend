@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { MatchCard } from "@/components/search/MatchCard";
@@ -90,17 +91,19 @@ export default function Home() {
 
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden font-sans">
-      {/* Sidebar Navbar */}
-      <nav className="flex w-17 flex-col items-center justify-between py-6 border-r border-transparent z-20 shrink-0 bg-transparent">
-        <div className="flex flex-col gap-6 items-center">
-          <div
-            aria-label="Khedma.ai"
-            className="flex size-8 items-center justify-center rounded-lg bg-primary font-heading text-sm font-semibold text-primary-foreground mb-4"
-          >
-            K
-          </div>
-        </div>
-      </nav>
+      {/* Logo — fixed to align with ProfileButton in the same left column */}
+      <div className="fixed top-6 left-6 z-20">
+        <div className="logo-glow" />
+        <Image
+          src="/logo.png"
+          alt="Khedma.ai"
+          width={40}
+          height={40}
+          className="relative rounded-full size-10 object-cover"
+          priority
+        />
+      </div>
+      <div className="w-17 shrink-0" />
 
       {/* Main Content Area */}
       <main className="relative flex-1 flex flex-col w-full h-full">
