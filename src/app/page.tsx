@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { MatchCard } from "@/components/search/MatchCard";
 import { AgentAvatar, type AgentState } from "@/components/search/AgentAvatar";
-import { VoiceMode } from "@/components/search/VoiceMode";
+import { GeminiVoiceMode } from "@/components/search/GeminiVoiceMode";
+import type { SearchJobsArgs } from "@/hooks/useGeminiLiveVoice";
 import { ResumeUploadDialog } from "@/components/ResumeUploadDialog";
 import { profileService } from "@/services/profile.service";
 import { searchService } from "@/services/search.service";
@@ -57,16 +58,24 @@ export default function Home() {
   }, [turns]);
 
   const runSearch = useCallback(
-    async (currentMessage: string) => {
+    async (
+      currentMessage: string,
+      overrides?: {
+        scope?: LocationScope;
+        remote_only?: boolean;
+        country?: string;
+        seniority?: Seniority;
+      },
+    ) => {
       if (!profileId) throw new Error("No profile found");
 
       const result = await searchService.search({
         message: currentMessage,
         profile_id: profileId,
-        scope: scope ?? undefined,
-        remote_only: remoteOnly || undefined,
-        country: country ?? undefined,
-        seniority: seniority ?? undefined,
+        scope: overrides?.scope ?? scope ?? undefined,
+        remote_only: overrides?.remote_only ?? (remoteOnly || undefined),
+        country: overrides?.country ?? country ?? undefined,
+        seniority: overrides?.seniority ?? seniority ?? undefined,
       });
       setTurns((prev) => [
         ...prev,
@@ -102,14 +111,14 @@ export default function Home() {
     }
   }
 
-  const handleVoiceSubmit = useCallback(
-    async (transcript: string) => {
-      try {
-        return await runSearch(transcript);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Search failed");
-        throw err;
-      }
+  const handleSearchJobs = useCallback(
+    async (args: SearchJobsArgs) => {
+      return runSearch(args.query, {
+        scope: args.scope,
+        remote_only: args.remote_only,
+        country: args.country,
+        seniority: args.seniority,
+      });
     },
     [runSearch],
   );
@@ -243,30 +252,36 @@ export default function Home() {
                 Remote only
               </button>
 
-              {profile && (profile.base_country || profile.target_countries.length > 0) && (
-                <div className="relative">
-                  <select
-                    value={country ?? ""}
-                    onChange={(e) => setCountry(e.target.value || null)}
-                    className={cn(
-                      "appearance-none rounded-full border px-3.5 py-1.5 pr-7 text-[13px] font-medium transition-colors cursor-pointer",
-                      country
-                        ? "border-primary bg-primary/15 text-foreground"
-                        : "border-border bg-transparent text-muted-foreground hover:text-foreground hover:border-ring",
-                    )}
-                  >
-                    <option value="">Any country</option>
-                    {[profile.base_country, ...profile.target_countries]
-                      .filter(Boolean)
-                      .map((code) => (
-                        <option key={code} value={code} className="bg-popover text-popover-foreground">
-                          {countryName(code)}
-                        </option>
-                      ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 opacity-60" />
-                </div>
-              )}
+              {profile &&
+                (profile.base_country ||
+                  profile.target_countries.length > 0) && (
+                  <div className="relative">
+                    <select
+                      value={country ?? ""}
+                      onChange={(e) => setCountry(e.target.value || null)}
+                      className={cn(
+                        "appearance-none rounded-full border px-3.5 py-1.5 pr-7 text-[13px] font-medium transition-colors cursor-pointer",
+                        country
+                          ? "border-primary bg-primary/15 text-foreground"
+                          : "border-border bg-transparent text-muted-foreground hover:text-foreground hover:border-ring",
+                      )}
+                    >
+                      <option value="">Any country</option>
+                      {[profile.base_country, ...profile.target_countries]
+                        .filter(Boolean)
+                        .map((code) => (
+                          <option
+                            key={code}
+                            value={code}
+                            className="bg-popover text-popover-foreground"
+                          >
+                            {countryName(code)}
+                          </option>
+                        ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 opacity-60" />
+                  </div>
+                )}
 
               {(
                 [
@@ -339,9 +354,9 @@ export default function Home() {
       </main>
 
       {voiceModeOpen && (
-        <VoiceMode
+        <GeminiVoiceMode
           onClose={() => setVoiceModeOpen(false)}
-          onSubmit={handleVoiceSubmit}
+          onSearchJobs={handleSearchJobs}
         />
       )}
     </div>
