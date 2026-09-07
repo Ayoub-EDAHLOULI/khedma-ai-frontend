@@ -43,6 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           closeOnClick
           pauseOnHover
           theme="dark"
+          toastClassName="khedma-toast"
         />
       </body>
     </html>

@@ -112,3 +112,25 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Toasts (react-toastify, theme="dark") — mapped to our own palette instead of
+   the library's built-in dark theme, which reads as flat/generic against our
+   design system. theme="dark" gives every toast a flat --toastify-color-dark
+   background regardless of type (info/success/error), with only the icon and
+   progress bar colored per-type — that per-type coloring keeps working since we
+   only override the background/text pair below. */
+:root {
+  --toastify-color-dark: var(--card);
+  --toastify-text-color-dark: var(--foreground);
+  --toastify-icon-color-info: var(--primary);
+  --toastify-icon-color-success: #3ba55d;
+  --toastify-icon-color-warning: #d6a13a;
+  --toastify-icon-color-error: var(--destructive);
+}
+
+.khedma-toast {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-inter), sans-serif;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+}
