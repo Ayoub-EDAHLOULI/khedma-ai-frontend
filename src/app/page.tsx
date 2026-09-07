@@ -9,7 +9,7 @@ import { ResumeUploadDialog } from "@/components/ResumeUploadDialog";
 import { profileService } from "@/services/profile.service";
 import { searchService } from "@/services/search.service";
 import { useSpeechInput } from "@/hooks/useSpeechInput";
-import type { SearchResultItem } from "@/types/api";
+import type { LocationScope, SearchResultItem } from "@/types/api";
 import { cn } from "@/lib/utils";
 import { Plus, Mic, ChevronDown, FileUp } from "lucide-react";
 
@@ -29,6 +29,7 @@ export default function Home() {
   const [agentState, setAgentState] = useState<AgentState>("idle");
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>("text");
+  const [scope, setScope] = useState<LocationScope | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const handleSpeechResult = useCallback((transcript: string) => {
@@ -67,6 +68,7 @@ export default function Home() {
       const result = await searchService.search({
         message: currentMessage,
         profile_id: profileId,
+        scope: scope ?? undefined,
       });
       setTurns((prev) => [
         ...prev,
@@ -180,6 +182,30 @@ export default function Home() {
                 : "fixed bottom-8 mx-auto w-full max-w-3xl left-0 right-0 ml-17",
             )}
           >
+            <div className="relative z-10 mb-3 flex items-center justify-center gap-2">
+              {(
+                [
+                  { value: null, label: "Any scope" },
+                  { value: "local", label: "Local" },
+                  { value: "international", label: "International" },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() => setScope(option.value)}
+                  className={cn(
+                    "rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors",
+                    scope === option.value
+                      ? "border-primary bg-primary/15 text-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-ring",
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
             <div className="input-glow" />
             <form
               onSubmit={handleSearch}
