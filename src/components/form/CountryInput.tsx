@@ -1,8 +1,8 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { COUNTRY_LIST, countryName } from "@/lib/countries";
@@ -22,8 +22,13 @@ export function CountryInput({
 }: CountryInputProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [rect, setRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -42,6 +47,10 @@ export function CountryInput({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -55,7 +64,7 @@ export function CountryInput({
   function selectCountry(code: string) {
     onChange([...value, code]);
     setQuery("");
-    setOpen(false);
+    inputRef.current?.focus();
   }
 
   function removeCountry(code: string) {
@@ -64,14 +73,9 @@ export function CountryInput({
 
   return (
     <div ref={containerRef} className="relative">
-      <div
-        className={cn(
-          "flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm focus-within:border-ring focus-within:ring-ring/50",
-          className,
-        )}
-      >
+      <div className="flex w-full flex-wrap items-center gap-1.5">
         {value.map((code) => (
-          <Badge key={code} variant="secondary" className="gap-1">
+          <Badge key={code} variant="secondary" className="gap-1 py-1.5">
             {countryName(code)}
             <button
               type="button"
@@ -83,29 +87,43 @@ export function CountryInput({
             </button>
           </Badge>
         ))}
-        <input
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 120)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && matches.length > 0) {
-              e.preventDefault();
-              selectCountry(matches[0].code);
-            } else if (
-              e.key === "Backspace" &&
-              query === "" &&
-              value.length > 0
-            ) {
-              removeCountry(value[value.length - 1]);
-            }
-          }}
-          placeholder={value.length === 0 ? placeholder : "Search countries…"}
-          className="min-w-32 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
+
+        {open ? (
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onBlur={() => setTimeout(() => setOpen(false), 120)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && matches.length > 0) {
+                e.preventDefault();
+                selectCountry(matches[0].code);
+              } else if (e.key === "Escape") {
+                setOpen(false);
+              } else if (
+                e.key === "Backspace" &&
+                query === "" &&
+                value.length > 0
+              ) {
+                removeCountry(value[value.length - 1]);
+              }
+            }}
+            placeholder={placeholder}
+            className={cn(
+              "min-w-32 flex-1 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm outline-none focus:border-ring placeholder:text-muted-foreground",
+              className,
+            )}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="mt-1.5 flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
+          >
+            <Plus className="size-3.5" />
+            Add country
+          </button>
+        )}
       </div>
 
       {open &&

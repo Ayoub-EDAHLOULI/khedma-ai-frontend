@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
-import { X } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,12 @@ export function TagInput({
   className,
 }: TagInputProps) {
   const [draft, setDraft] = useState("");
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   function addTag(raw: string) {
     const tag = raw.trim();
@@ -36,20 +42,18 @@ export function TagInput({
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       addTag(draft);
+    } else if (e.key === "Escape") {
+      setDraft("");
+      setOpen(false);
     } else if (e.key === "Backspace" && draft === "" && value.length > 0) {
       removeTag(value[value.length - 1]);
     }
   }
 
   return (
-    <div
-      className={cn(
-        "flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm focus-within:border-ring  focus-within:ring-ring/50",
-        className,
-      )}
-    >
+    <div className="flex w-full flex-wrap items-center gap-1.5">
       {value.map((tag) => (
-        <Badge key={tag} variant="secondary" className="gap-1">
+        <Badge key={tag} variant="secondary" className="gap-1 py-1.5">
           {tag}
           <button
             type="button"
@@ -61,14 +65,33 @@ export function TagInput({
           </button>
         </Badge>
       ))}
-      <input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={() => addTag(draft)}
-        placeholder={value.length === 0 ? placeholder : undefined}
-        className="min-w-24 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-      />
+
+      {open ? (
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => {
+            addTag(draft);
+            setOpen(false);
+          }}
+          placeholder={placeholder}
+          className={cn(
+            "min-w-32 flex-1 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm outline-none focus:border-ring placeholder:text-muted-foreground",
+            className,
+          )}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-1.5 flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
+        >
+          <Plus className="size-3.5" />
+          Add skill
+        </button>
+      )}
     </div>
   );
 }
