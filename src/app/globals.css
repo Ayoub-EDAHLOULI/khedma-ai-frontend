@@ -134,3 +134,19 @@
   font-family: var(--font-inter), sans-serif;
   box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
 }
+
+/* Faint page-level glow for secondary pages (e.g. profile) — same technique as
+   .input-glow, much lower opacity/size, fixed behind the whole page rather than
+   anchored to one element. Ties the page to the search page's identity without
+   competing with it. */
+.page-glow {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 60% 40% at 50% 0%,
+    color-mix(in oklch, var(--primary), transparent 75%) 0%,
+    transparent 70%
+  );
+}

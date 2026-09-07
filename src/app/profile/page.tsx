@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-toastify";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { TagInput } from "@/components/form/TagInput";
 import {
   profileFormSchema,
@@ -15,7 +24,6 @@ import {
 } from "@/validations/profile.schema";
 import { profileService } from "@/services/profile.service";
 import { ApiError } from "@/lib/api";
-import { CircleUser } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const defaultValues: ProfileFormValues = {
@@ -26,6 +34,9 @@ const defaultValues: ProfileFormValues = {
   skills: [],
   preferred_languages: ["darija", "fr", "ar", "en"],
 };
+
+const inputClasses =
+  "bg-background border border-border focus-visible:border-ring focus-visible:ring-0 text-foreground rounded-lg px-4 py-2.5 transition-colors";
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
@@ -81,143 +92,160 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#131418]">
-        <p className="text-gray-400">Loading your profile…</p>
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading your profile…</p>
       </div>
     );
   }
 
-  const inputClasses =
-    "bg-[#1e1f26] border border-[#2e303b] focus-visible:border-blue-500 focus-visible:ring-0 text-gray-200 rounded-xl px-4 py-2.5 transition-colors";
-
   return (
-    <div className="flex min-h-screen w-full bg-[#131418] text-gray-200 font-sans relative">
-      {/* Floating Bottom Left Action */}
-      <div className="fixed bottom-6 left-6 z-20">
-        <button className="flex size-10 items-center justify-center rounded-full border border-gray-700 bg-[#1e1f26] text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors">
-          <CircleUser className="size-5" />
-        </button>
-      </div>
+    <div className="relative min-h-screen w-full bg-background text-foreground font-sans">
+      <div className="page-glow" />
+      <main className="relative z-10 mx-auto w-full max-w-2xl px-6 pt-10 pb-32">
+        <Link
+          href="/"
+          className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Back to search
+        </Link>
 
-      {/* Floating Bottom Right Logo */}
-      <div className="fixed bottom-6 right-6 z-20">
-        <div className="flex size-10 items-center justify-center rounded-full border border-gray-700 bg-[#1e1f26] text-gray-200 font-semibold font-heading hover:border-gray-500 transition-colors cursor-pointer">
-          N
-        </div>
-      </div>
-
-      <main className="mx-auto w-full max-w-2xl px-6 pt-20 pb-32">
-        <header className="mb-10">
-          <h1 className="text-3xl font-medium text-[#e3e3e6] tracking-wide font-heading">
+        <header className="mb-8">
+          <h1 className="font-heading text-3xl font-medium tracking-wide text-foreground">
             Your profile
           </h1>
-          <p className="mt-2 text-sm text-gray-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             This is what your search results and generated applications are
             built from.
           </p>
         </header>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
-          <div className="flex flex-col gap-2.5">
-            <Label htmlFor="full_name" className="text-gray-300 font-medium">
-              Full name
-            </Label>
-            <Input
-              id="full_name"
-              className={inputClasses}
-              {...register("full_name")}
-            />
-            {errors.full_name && (
-              <p className="text-sm text-red-400">{errors.full_name.message}</p>
-            )}
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Basics</CardTitle>
+              <CardDescription>
+                Your name and where you&apos;re based.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2.5">
+                <Label
+                  htmlFor="full_name"
+                  className="font-medium text-foreground/90"
+                >
+                  Full name
+                </Label>
+                <Input
+                  id="full_name"
+                  className={inputClasses}
+                  {...register("full_name")}
+                />
+                {errors.full_name && (
+                  <p className="text-sm text-destructive">
+                    {errors.full_name.message}
+                  </p>
+                )}
+              </div>
 
-          <div className="flex flex-col gap-2.5">
-            <Label htmlFor="base_country" className="text-gray-300 font-medium">
-              Base country
-            </Label>
-            <Input
-              id="base_country"
-              placeholder="MA"
-              maxLength={2}
-              className={inputClasses}
-              {...register("base_country")}
-            />
-            <p className="text-[13px] text-gray-400 mt-1">
-              2-letter ISO code. Drives which jobs count as &quot;local&quot;.
-            </p>
-            {errors.base_country && (
-              <p className="text-sm text-red-400">
-                {errors.base_country.message}
-              </p>
-            )}
-          </div>
+              <div className="flex flex-col gap-2.5">
+                <Label
+                  htmlFor="base_country"
+                  className="font-medium text-foreground/90"
+                >
+                  Base country
+                </Label>
+                <Input
+                  id="base_country"
+                  placeholder="MA"
+                  maxLength={2}
+                  className={cn(inputClasses, "max-w-32")}
+                  {...register("base_country")}
+                />
+                <p className="text-[13px] text-muted-foreground">
+                  2-letter ISO code. Drives which jobs count as
+                  &quot;local&quot;.
+                </p>
+                {errors.base_country && (
+                  <p className="text-sm text-destructive">
+                    {errors.base_country.message}
+                  </p>
+                )}
+              </div>
 
-          <div className="flex flex-col gap-2.5">
-            <Label className="text-gray-300 font-medium">
-              Target countries (international opt-in)
-            </Label>
-            <Controller
-              control={control}
-              name="target_countries"
-              render={({ field }) => (
-                <div
+              <div className="flex flex-col gap-2.5">
+                <Label className="font-medium text-foreground/90">
+                  Target countries (international opt-in)
+                </Label>
+                <Controller
+                  control={control}
+                  name="target_countries"
+                  render={({ field }) => (
+                    <TagInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="FR, DE, …"
+                      className="bg-background"
+                    />
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Experience</CardTitle>
+              <CardDescription>
+                Used to match and tailor applications to real postings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2.5">
+                <Label
+                  htmlFor="cv_text"
+                  className="font-medium text-foreground/90"
+                >
+                  CV text
+                </Label>
+                <Textarea
+                  id="cv_text"
+                  rows={5}
                   className={cn(
                     inputClasses,
-                    "py-1.5 focus-within:border-blue-500",
+                    "resize-y min-h-30 leading-relaxed",
                   )}
-                >
-                  <TagInput
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="FR, DE, …"
-                  />
-                </div>
-              )}
-            />
-          </div>
+                  {...register("cv_text")}
+                />
+                {errors.cv_text && (
+                  <p className="text-sm text-destructive">
+                    {errors.cv_text.message}
+                  </p>
+                )}
+              </div>
 
-          <div className="flex flex-col gap-2.5">
-            <Label htmlFor="cv_text" className="text-gray-300 font-medium">
-              CV text
-            </Label>
-            <Textarea
-              id="cv_text"
-              rows={5}
-              className={cn(inputClasses, "resize-y min-h-30 leading-relaxed")}
-              {...register("cv_text")}
-            />
-            {errors.cv_text && (
-              <p className="text-sm text-red-400">{errors.cv_text.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2.5">
-            <Label className="text-gray-300 font-medium">Skills</Label>
-            <Controller
-              control={control}
-              name="skills"
-              render={({ field }) => (
-                <div
-                  className={cn(
-                    inputClasses,
-                    "py-1.5 focus-within:border-blue-500",
+              <div className="flex flex-col gap-2.5">
+                <Label className="font-medium text-foreground/90">Skills</Label>
+                <Controller
+                  control={control}
+                  name="skills"
+                  render={({ field }) => (
+                    <TagInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Python, FastAPI, …"
+                      className="bg-background"
+                    />
                   )}
-                >
-                  <TagInput
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Python, FastAPI, …"
-                  />
-                </div>
-              )}
-            />
-          </div>
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           <Button
             type="submit"
             disabled={saving}
-            className="self-start mt-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-5 text-sm font-medium transition-colors border-none"
+            className="self-start mt-2 rounded-full px-6 py-5 text-sm font-medium"
           >
             {saving ? "Saving…" : "Save profile"}
           </Button>
