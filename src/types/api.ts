@@ -42,6 +42,7 @@ export interface Job {
   city: string | null;
   is_remote: boolean;
   scope: LocationScope | null;
+  seniority: string | null;
   description: string | null;
 }
 
@@ -58,10 +59,15 @@ export interface SearchResult {
   results: SearchResultItem[];
 }
 
+export type Seniority = "junior" | "mid" | "senior";
+
 export interface SearchInput {
   message: string;
   profile_id: string;
   scope?: LocationScope;
+  remote_only?: boolean;
+  country?: string;
+  seniority?: Seniority;
 }
 
 export interface PrepareResult {

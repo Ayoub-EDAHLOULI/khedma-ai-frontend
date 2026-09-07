@@ -9,7 +9,13 @@ import { ResumeUploadDialog } from "@/components/ResumeUploadDialog";
 import { profileService } from "@/services/profile.service";
 import { searchService } from "@/services/search.service";
 import { useSpeechInput } from "@/hooks/useSpeechInput";
-import type { LocationScope, SearchResultItem } from "@/types/api";
+import type {
+  LocationScope,
+  Profile,
+  Seniority,
+  SearchResultItem,
+} from "@/types/api";
+import { countryName } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { Plus, Mic, ChevronDown, FileUp } from "lucide-react";
 
@@ -23,6 +29,7 @@ interface Turn {
 
 export default function Home() {
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [message, setMessage] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [searching, setSearching] = useState(false);
@@ -30,6 +37,9 @@ export default function Home() {
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>("text");
   const [scope, setScope] = useState<LocationScope | null>(null);
+  const [remoteOnly, setRemoteOnly] = useState(false);
+  const [country, setCountry] = useState<string | null>(null);
+  const [seniority, setSeniority] = useState<Seniority | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const handleSpeechResult = useCallback((transcript: string) => {
@@ -46,7 +56,10 @@ export default function Home() {
   useEffect(() => {
     profileService
       .get()
-      .then((profile) => setProfileId(profile.id))
+      .then((p) => {
+        setProfileId(p.id);
+        setProfile(p);
+      })
       .catch(() =>
         toast.error("No profile found. Set up your profile before searching."),
       );
@@ -69,6 +82,9 @@ export default function Home() {
         message: currentMessage,
         profile_id: profileId,
         scope: scope ?? undefined,
+        remote_only: remoteOnly || undefined,
+        country: country ?? undefined,
+        seniority: seniority ?? undefined,
       });
       setTurns((prev) => [
         ...prev,
@@ -182,7 +198,7 @@ export default function Home() {
                 : "fixed bottom-8 mx-auto w-full max-w-3xl left-0 right-0 ml-17",
             )}
           >
-            <div className="relative z-10 mb-3 flex items-center justify-center gap-2">
+            <div className="relative z-10 mb-3 flex flex-wrap items-center justify-center gap-2">
               {(
                 [
                   { value: null, label: "Any scope" },
@@ -197,6 +213,67 @@ export default function Home() {
                   className={cn(
                     "rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors",
                     scope === option.value
+                      ? "border-primary bg-primary/15 text-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-ring",
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setRemoteOnly((prev) => !prev)}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors",
+                  remoteOnly
+                    ? "border-primary bg-primary/15 text-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-ring",
+                )}
+              >
+                Remote only
+              </button>
+
+              {profile && (profile.base_country || profile.target_countries.length > 0) && (
+                <div className="relative">
+                  <select
+                    value={country ?? ""}
+                    onChange={(e) => setCountry(e.target.value || null)}
+                    className={cn(
+                      "appearance-none rounded-full border px-3.5 py-1.5 pr-7 text-[13px] font-medium transition-colors cursor-pointer",
+                      country
+                        ? "border-primary bg-primary/15 text-foreground"
+                        : "border-border bg-transparent text-muted-foreground hover:text-foreground hover:border-ring",
+                    )}
+                  >
+                    <option value="">Any country</option>
+                    {[profile.base_country, ...profile.target_countries]
+                      .filter(Boolean)
+                      .map((code) => (
+                        <option key={code} value={code} className="bg-popover text-popover-foreground">
+                          {countryName(code)}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 opacity-60" />
+                </div>
+              )}
+
+              {(
+                [
+                  { value: null, label: "Any level" },
+                  { value: "junior", label: "Junior" },
+                  { value: "mid", label: "Mid" },
+                  { value: "senior", label: "Senior" },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() => setSeniority(option.value)}
+                  className={cn(
+                    "rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors",
+                    seniority === option.value
                       ? "border-primary bg-primary/15 text-foreground"
                       : "border-border text-muted-foreground hover:text-foreground hover:border-ring",
                   )}
