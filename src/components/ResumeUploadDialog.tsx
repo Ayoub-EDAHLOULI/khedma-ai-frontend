@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { profileService } from "@/services/profile.service";
 
 const ACCEPTED_TYPES = ".pdf,.docx";
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 // Session-local hand-off from the parse step to the profile form — avoids
 // round-tripping the parsed resume through the backend twice (parse, then
@@ -36,7 +37,21 @@ export function ResumeUploadDialog({
   const router = useRouter();
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setFile(e.target.files?.[0] ?? null);
+    const selected = e.target.files?.[0] ?? null;
+    e.target.value = "";
+    if (!selected) return;
+
+    const lower = selected.name.toLowerCase();
+    if (!lower.endsWith(".pdf") && !lower.endsWith(".docx")) {
+      toast.error("Please upload a PDF or Word (.docx) file.");
+      return;
+    }
+    if (selected.size > MAX_FILE_BYTES) {
+      toast.error("File is too large — max 10 MB.");
+      return;
+    }
+
+    setFile(selected);
   }
 
   async function handleSubmit() {
@@ -48,7 +63,9 @@ export function ResumeUploadDialog({
       onOpenChange(false);
       router.push("/profile?fromResume=1");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to parse resume");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to parse resume",
+      );
     } finally {
       setParsing(false);
     }
