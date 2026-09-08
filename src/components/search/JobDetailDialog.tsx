@@ -7,6 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { fallbackSearchUrl, platformName } from "@/lib/jobSource";
 import type { SearchResultItem } from "@/types/api";
 
 function locationLabel(job: SearchResultItem["job"]) {
@@ -35,6 +36,12 @@ export function JobDetailDialog({
   item: SearchResultItem | null;
   onOpenChange: (open: boolean) => void;
 }) {
+  const applyUrl =
+    item &&
+    (item.job.url ??
+      fallbackSearchUrl(item.job.source, item.job.title, item.job.company));
+  const isDirectLink = item?.job.url != null;
+
   return (
     <Dialog open={item !== null} onOpenChange={onOpenChange}>
       {item && (
@@ -104,20 +111,26 @@ export function JobDetailDialog({
             )}
           </div>
 
-          <div className="border-t border-border px-6 py-4">
-            {item.job.url ? (
+          <div className="flex flex-col gap-1.5 border-t border-border px-6 py-4">
+            {applyUrl ? (
               <Button
-                render={
-                  <a href={item.job.url} target="_blank" rel="noreferrer" />
-                }
+                render={<a href={applyUrl} target="_blank" rel="noreferrer" />}
                 className="w-full"
               >
-                View original posting
+                {isDirectLink
+                  ? "Apply on original posting"
+                  : `Search on ${platformName(item.job.source)}`}
                 <ExternalLink data-icon="inline-end" />
               </Button>
             ) : (
               <p className="text-center text-xs text-muted-foreground">
-                No original link available for this posting.
+                No link available for this posting.
+              </p>
+            )}
+            {!isDirectLink && applyUrl && (
+              <p className="text-center text-[11px] text-muted-foreground">
+                No direct link saved for this posting — this opens a search for
+                it on {platformName(item.job.source)}.
               </p>
             )}
           </div>
