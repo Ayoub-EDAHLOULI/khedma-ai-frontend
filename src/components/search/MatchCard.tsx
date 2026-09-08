@@ -12,12 +12,33 @@ function scoreTone(score: number) {
   return "text-muted-foreground";
 }
 
-export function MatchCard({ item }: { item: SearchResultItem }) {
+export function MatchCard({
+  item,
+  onClick,
+}: {
+  item: SearchResultItem;
+  onClick?: () => void;
+}) {
   const { job, score, reasoning } = item;
   const location = locationLabel(job);
 
   return (
-    <article className="group flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5 transition-all hover:border-ring hover:shadow-lg hover:shadow-black/10">
+    <article
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      className="group flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5 text-left transition-all hover:border-ring hover:shadow-lg hover:shadow-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+    >
       <div className="flex items-start justify-between gap-4">
         <h3 className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-foreground">
           {job.title}

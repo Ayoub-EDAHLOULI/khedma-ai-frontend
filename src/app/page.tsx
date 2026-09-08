@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { MatchCard } from "@/components/search/MatchCard";
+import { JobDetailDialog } from "@/components/search/JobDetailDialog";
 import {
   ResultsToolbar,
   applyResultsFilter,
@@ -55,6 +56,9 @@ export default function Home() {
   const [resultFilters, setResultFilters] = useState<
     Record<number, ResultsFilter>
   >({});
+  const [selectedJob, setSelectedJob] = useState<SearchResultItem | null>(
+    null,
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -229,7 +233,11 @@ export default function Home() {
                             {visibleResults.length > 0 ? (
                               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {visibleResults.map((item) => (
-                                  <MatchCard key={item.match_id} item={item} />
+                                  <MatchCard
+                                    key={item.match_id}
+                                    item={item}
+                                    onClick={() => setSelectedJob(item)}
+                                  />
                                 ))}
                               </div>
                             ) : (
@@ -396,6 +404,13 @@ export default function Home() {
           onSearchJobs={handleSearchJobs}
         />
       )}
+
+      <JobDetailDialog
+        item={selectedJob}
+        onOpenChange={(open) => {
+          if (!open) setSelectedJob(null);
+        }}
+      />
     </div>
   );
 }

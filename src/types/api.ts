@@ -44,6 +44,7 @@ export interface Job {
   scope: LocationScope | null;
   seniority: string | null;
   description: string | null;
+  url: string | null;
 }
 
 export interface SearchResultItem {
