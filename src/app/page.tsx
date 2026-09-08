@@ -4,10 +4,23 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { MatchCard } from "@/components/search/MatchCard";
+import {
+  ResultsToolbar,
+  applyResultsFilter,
+  defaultResultsFilter,
+  type ResultsFilter,
+} from "@/components/search/ResultsToolbar";
 import { AgentAvatar, type AgentState } from "@/components/search/AgentAvatar";
 import { GeminiVoiceMode } from "@/components/search/GeminiVoiceMode";
 import type { SearchJobsArgs } from "@/hooks/useGeminiLiveVoice";
 import { ResumeUploadDialog } from "@/components/ResumeUploadDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { profileService } from "@/services/profile.service";
 import { searchService } from "@/services/search.service";
 import type {
@@ -18,7 +31,7 @@ import type {
 } from "@/types/api";
 import { countryName } from "@/lib/countries";
 import { cn } from "@/lib/utils";
-import { Plus, Mic, ArrowUp, ChevronDown, FileUp } from "lucide-react";
+import { Plus, Mic, ArrowUp, FileUp } from "lucide-react";
 
 interface Turn {
   message: string;
@@ -39,6 +52,9 @@ export default function Home() {
   const [country, setCountry] = useState<string | null>(null);
   const [seniority, setSeniority] = useState<Seniority | null>(null);
   const [voiceModeOpen, setVoiceModeOpen] = useState(false);
+  const [resultFilters, setResultFilters] = useState<
+    Record<number, ResultsFilter>
+  >({});
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -164,7 +180,7 @@ export default function Home() {
           className={cn(
             "relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col px-6",
             hasSearched
-              ? "justify-start pt-10 pb-32 overflow-y-auto scrollbar-hide"
+              ? "justify-start pt-10 pb-56 overflow-y-auto scrollbar-hide"
               : "justify-center items-center pb-24",
           )}
         >
@@ -178,31 +194,56 @@ export default function Home() {
 
           {hasSearched && (
             <div className="flex flex-col gap-10 w-full">
-              {turns.map((turn, i) => (
-                <div key={i} className="flex flex-col gap-4">
-                  <p className="text-sm text-muted-foreground self-end bg-card px-4 py-2 rounded-2xl max-w-[85%]">
-                    {turn.message}
-                  </p>
-                  <div className="flex gap-3">
-                    <AgentAvatar
-                      state={agentState}
-                      className="size-6 mt-1 shrink-0"
-                    />
-                    <div className="flex flex-col gap-2">
-                      <p className="text-foreground leading-relaxed font-arabic-aware">
-                        {turn.reply}
-                      </p>
-                      {turn.results.length > 0 && (
-                        <div className="mt-4 grid gap-3">
-                          {turn.results.map((item) => (
-                            <MatchCard key={item.match_id} item={item} />
-                          ))}
-                        </div>
-                      )}
+              {turns.map((turn, i) => {
+                const filter = resultFilters[i] ?? defaultResultsFilter;
+                const visibleResults = applyResultsFilter(
+                  turn.results,
+                  filter,
+                );
+                return (
+                  <div key={i} className="flex flex-col gap-4">
+                    <p className="text-sm text-muted-foreground self-end bg-card px-4 py-2 rounded-2xl max-w-[85%]">
+                      {turn.message}
+                    </p>
+                    <div className="flex gap-3">
+                      <AgentAvatar
+                        state={agentState}
+                        className="size-6 mt-1 shrink-0"
+                      />
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <p className="text-foreground leading-relaxed font-arabic-aware">
+                          {turn.reply}
+                        </p>
+                        {turn.results.length > 0 && (
+                          <div className="mt-4 flex flex-col gap-3">
+                            <ResultsToolbar
+                              filter={filter}
+                              onChange={(next) =>
+                                setResultFilters((prev) => ({
+                                  ...prev,
+                                  [i]: next,
+                                }))
+                              }
+                              resultCount={visibleResults.length}
+                            />
+                            {visibleResults.length > 0 ? (
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                {visibleResults.map((item) => (
+                                  <MatchCard key={item.match_id} item={item} />
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="py-6 text-center text-sm text-muted-foreground">
+                                No results match these filters.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={bottomRef} />
             </div>
           )}
@@ -213,7 +254,7 @@ export default function Home() {
               "relative",
               !hasSearched
                 ? "w-full max-w-2xl mt-2"
-                : "fixed bottom-8 mx-auto w-full max-w-3xl left-0 right-0 ml-17",
+                : "fixed bottom-8 left-17 right-0 z-20 mx-auto w-full max-w-3xl px-6",
             )}
           >
             <div className="relative z-10 mb-3 flex flex-wrap items-center justify-center gap-2">
@@ -255,32 +296,28 @@ export default function Home() {
               {profile &&
                 (profile.base_country ||
                   profile.target_countries.length > 0) && (
-                  <div className="relative">
-                    <select
-                      value={country ?? ""}
-                      onChange={(e) => setCountry(e.target.value || null)}
+                  <Select
+                    value={country ?? ""}
+                    onValueChange={(value) => setCountry(value || null)}
+                  >
+                    <SelectTrigger
                       className={cn(
-                        "appearance-none rounded-full border px-3.5 py-1.5 pr-7 text-[13px] font-medium transition-colors cursor-pointer",
-                        country
-                          ? "border-primary bg-primary/15 text-foreground"
-                          : "border-border bg-transparent text-muted-foreground hover:text-foreground hover:border-ring",
+                        country && "border-primary bg-primary/15 text-foreground",
                       )}
                     >
-                      <option value="">Any country</option>
+                      <SelectValue placeholder="Any country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any country</SelectItem>
                       {[profile.base_country, ...profile.target_countries]
                         .filter(Boolean)
                         .map((code) => (
-                          <option
-                            key={code}
-                            value={code}
-                            className="bg-popover text-popover-foreground"
-                          >
+                          <SelectItem key={code} value={code}>
                             {countryName(code)}
-                          </option>
+                          </SelectItem>
                         ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 opacity-60" />
-                  </div>
+                    </SelectContent>
+                  </Select>
                 )}
 
               {(
