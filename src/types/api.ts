@@ -25,12 +25,16 @@ export interface ProfileInput {
   cv_text: string;
   skills?: string[];
   preferred_languages?: string[];
+  resume_docx?: string | null;
+  resume_filename?: string | null;
 }
 
 export interface ParsedResume {
   full_name: string;
   skills: string[];
   cv_text: string;
+  resume_docx?: string | null;
+  resume_filename?: string | null;
 }
 
 export interface Job {
@@ -73,6 +77,8 @@ export interface SearchInput {
 }
 
 export interface PrepareResult {
+  id: string;
+  status: ApplicationStatus;
   tailored_cv: string;
   cover_letter: string;
 }
@@ -82,6 +88,8 @@ export type ApplicationStatus = "draft" | "applied" | "rejected" | "interview";
 export interface Application {
   id: string;
   match_id: string;
+  job: Job;
+  score: number;
   tailored_cv: string | null;
   cover_letter: string | null;
   status: ApplicationStatus;

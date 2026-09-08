@@ -71,4 +71,22 @@ export const api = {
       method: "POST",
       body: formData,
     }),
+
+  // Endpoints that return a raw file (e.g. .docx) instead of the ApiResponse
+  // envelope — fetches it and triggers a browser download.
+  downloadFile: async (path: string, filename: string) => {
+    const response = await fetch(`${API_URL}${path}`);
+    if (!response.ok) {
+      throw new ApiError(`Download failed (${response.status})`, response.status, []);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
 };

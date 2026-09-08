@@ -117,7 +117,12 @@ export default function ProfilePage() {
   async function onSubmit(values: ProfileFormValues) {
     setSaving(true);
     try {
-      await profileService.save(values);
+      const parsed = parsedResumeRef.current;
+      await profileService.save({
+        ...values,
+        resume_docx: parsed?.resume_docx,
+        resume_filename: parsed?.resume_filename,
+      });
       toast.success("Profile saved.");
     } catch (err) {
       toast.error(
