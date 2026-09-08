@@ -69,6 +69,7 @@ export interface SearchInput {
   remote_only?: boolean;
   country?: string;
   seniority?: Seniority;
+  limit?: number;
 }
 
 export interface PrepareResult {

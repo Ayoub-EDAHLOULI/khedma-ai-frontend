@@ -52,6 +52,7 @@ export default function Home() {
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [country, setCountry] = useState<string | null>(null);
   const [seniority, setSeniority] = useState<Seniority | null>(null);
+  const [resultsLimit, setResultsLimit] = useState(5);
   const [voiceModeOpen, setVoiceModeOpen] = useState(false);
   const [resultFilters, setResultFilters] = useState<
     Record<number, ResultsFilter>
@@ -96,6 +97,7 @@ export default function Home() {
         remote_only: overrides?.remote_only ?? (remoteOnly || undefined),
         country: overrides?.country ?? country ?? undefined,
         seniority: overrides?.seniority ?? seniority ?? undefined,
+        limit: resultsLimit,
       });
       setTurns((prev) => [
         ...prev,
@@ -107,7 +109,7 @@ export default function Home() {
       ]);
       return result;
     },
-    [profileId, scope, remoteOnly, country, seniority],
+    [profileId, scope, remoteOnly, country, seniority, resultsLimit],
   );
 
   async function handleSearch(e: React.FormEvent) {
@@ -350,6 +352,22 @@ export default function Home() {
                   {option.label}
                 </button>
               ))}
+
+              <Select
+                value={String(resultsLimit)}
+                onValueChange={(value) => setResultsLimit(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[5, 10, 15, 20].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n} results
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="input-glow" />
