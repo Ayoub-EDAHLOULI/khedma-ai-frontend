@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Inter, Noto_Sans_Arabic } from "next/font/google";
 import { ToastContainer } from "react-toastify";
 import { ProfileButton } from "@/components/ProfileButton";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-background">
         {children}
         <ProfileButton />
+        <ScrollToTopButton />
         <ToastContainer
           position="top-right"
           autoClose={3000}
