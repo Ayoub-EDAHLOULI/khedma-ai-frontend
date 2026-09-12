@@ -57,9 +57,7 @@ export default function Home() {
   const [resultFilters, setResultFilters] = useState<
     Record<number, ResultsFilter>
   >({});
-  const [selectedJob, setSelectedJob] = useState<SearchResultItem | null>(
-    null,
-  );
+  const [selectedJob, setSelectedJob] = useState<SearchResultItem | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,23 +148,23 @@ export default function Home() {
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden font-sans">
       {/* Logo — fixed to align with ProfileButton in the same left column */}
-      <div className="fixed top-6 left-6 z-20">
+      <div className="fixed top-4 left-4 z-20 sm:top-6 sm:left-6">
         <div className="logo-glow" />
         <Image
           src="/logo.png"
           alt="Khedma.ai"
           width={40}
           height={40}
-          className="relative rounded-full size-10 object-cover"
+          className="relative rounded-full size-8 object-cover sm:size-10"
           priority
         />
       </div>
-      <div className="w-17 shrink-0" />
+      <div className="hidden w-17 shrink-0 sm:block" />
 
       {/* Main Content Area */}
       <main className="relative flex-1 flex flex-col w-full h-full">
         {/* Top Right Action */}
-        <div className="absolute top-6 right-6 z-20">
+        <div className="absolute top-4 right-4 z-20 sm:top-6 sm:right-6">
           <button
             type="button"
             onClick={() => setResumeDialogOpen(true)}
@@ -184,14 +182,14 @@ export default function Home() {
 
         <div
           className={cn(
-            "relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col px-6",
+            "relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6",
             hasSearched
               ? "justify-start pt-10 pb-56 overflow-y-auto scrollbar-hide"
               : "justify-center items-center pb-24",
           )}
         >
           {!hasSearched && (
-            <div className="mb-8 flex flex-col items-center text-center">
+            <div className="mb-8 mt-12 flex flex-col items-center text-center sm:mt-0">
               <h1 className="text-[28px] sm:text-[32px] font-normal text-foreground tracking-wide">
                 Ready when you are
               </h1>
@@ -202,10 +200,7 @@ export default function Home() {
             <div className="flex flex-col gap-10 w-full">
               {turns.map((turn, i) => {
                 const filter = resultFilters[i] ?? defaultResultsFilter;
-                const visibleResults = applyResultsFilter(
-                  turn.results,
-                  filter,
-                );
+                const visibleResults = applyResultsFilter(turn.results, filter);
                 return (
                   <div key={i} className="flex flex-col gap-4">
                     <p className="text-sm text-muted-foreground self-end bg-card px-4 py-2 rounded-2xl max-w-[85%]">
@@ -264,10 +259,10 @@ export default function Home() {
               "relative",
               !hasSearched
                 ? "w-full max-w-2xl mt-2"
-                : "fixed bottom-8 left-17 right-0 z-20 mx-auto w-full max-w-3xl px-6",
+                : "fixed bottom-4 left-0 right-0 z-20 mx-auto w-full max-w-3xl px-4 sm:bottom-8 sm:left-17 sm:px-6",
             )}
           >
-            <div className="relative z-10 mb-3 flex flex-wrap items-center justify-center gap-2">
+            <div className="relative z-10 mb-3 flex flex-wrap items-center justify-center gap-2 overflow-x-auto scrollbar-hide sm:overflow-visible">
               {(
                 [
                   { value: null, label: "Any scope" },
@@ -312,7 +307,8 @@ export default function Home() {
                   >
                     <SelectTrigger
                       className={cn(
-                        country && "border-primary bg-primary/15 text-foreground",
+                        country &&
+                          "border-primary bg-primary/15 text-foreground",
                       )}
                     >
                       <SelectValue placeholder="Any country" />
