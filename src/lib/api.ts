@@ -65,6 +65,8 @@ export const api = {
       body: data === undefined ? undefined : JSON.stringify(data),
     }),
 
+  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+
   // For file uploads — request() skips the JSON Content-Type for FormData
   // bodies so the browser can set its own multipart/form-data boundary.
   postForm: <T>(path: string, formData: FormData) =>

@@ -39,6 +39,11 @@ const defaultValues: ProfileFormValues = {
   cv_text: "",
   skills: [],
   preferred_languages: ["darija", "fr", "ar", "en"],
+  email: "",
+  phone: "",
+  linkedin_url: "",
+  github_url: "",
+  portfolio_url: "",
 };
 
 const inputClasses =
@@ -96,6 +101,11 @@ export default function ProfilePage() {
           cv_text: parsed?.cv_text || profile.cv_text,
           skills: parsed?.skills?.length ? parsed.skills : profile.skills,
           preferred_languages: profile.preferred_languages,
+          email: parsed?.email || profile.email || "",
+          phone: parsed?.phone || profile.phone || "",
+          linkedin_url: parsed?.linkedin_url || profile.linkedin_url || "",
+          github_url: parsed?.github_url || profile.github_url || "",
+          portfolio_url: parsed?.portfolio_url || profile.portfolio_url || "",
         });
         setResumeFilename(parsed?.resume_filename || profile.resume_filename);
         if (parsed) {
@@ -115,6 +125,11 @@ export default function ProfilePage() {
               full_name: parsed.full_name,
               cv_text: parsed.cv_text,
               skills: parsed.skills,
+              email: parsed.email || "",
+              phone: parsed.phone || "",
+              linkedin_url: parsed.linkedin_url || "",
+              github_url: parsed.github_url || "",
+              portfolio_url: parsed.portfolio_url || "",
             });
             setResumeFilename(parsed.resume_filename ?? null);
             setPendingResumeFile({
@@ -162,6 +177,11 @@ export default function ProfilePage() {
       full_name: parsed.full_name || current.full_name,
       cv_text: parsed.cv_text || current.cv_text,
       skills: parsed.skills?.length ? parsed.skills : current.skills,
+      email: parsed.email || current.email,
+      phone: parsed.phone || current.phone,
+      linkedin_url: parsed.linkedin_url || current.linkedin_url,
+      github_url: parsed.github_url || current.github_url,
+      portfolio_url: parsed.portfolio_url || current.portfolio_url,
     }));
     setPendingResumeFile({
       resume_docx: parsed.resume_docx,
@@ -270,6 +290,106 @@ export default function ProfilePage() {
                     />
                   )}
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact</CardTitle>
+              <CardDescription>
+                Included on generated resumes and cover letters.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2.5">
+                <Label htmlFor="email" className="font-medium text-foreground/90">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className={inputClasses}
+                  {...register("email")}
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                <Label htmlFor="phone" className="font-medium text-foreground/90">
+                  Phone
+                </Label>
+                <Input
+                  id="phone"
+                  placeholder="+212 6 00 00 00 00"
+                  className={inputClasses}
+                  {...register("phone")}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                <Label
+                  htmlFor="linkedin_url"
+                  className="font-medium text-foreground/90"
+                >
+                  LinkedIn
+                </Label>
+                <Input
+                  id="linkedin_url"
+                  placeholder="https://linkedin.com/in/…"
+                  className={inputClasses}
+                  {...register("linkedin_url")}
+                />
+                {errors.linkedin_url && (
+                  <p className="text-sm text-destructive">
+                    {errors.linkedin_url.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                <Label
+                  htmlFor="github_url"
+                  className="font-medium text-foreground/90"
+                >
+                  GitHub
+                </Label>
+                <Input
+                  id="github_url"
+                  placeholder="https://github.com/…"
+                  className={inputClasses}
+                  {...register("github_url")}
+                />
+                {errors.github_url && (
+                  <p className="text-sm text-destructive">
+                    {errors.github_url.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                <Label
+                  htmlFor="portfolio_url"
+                  className="font-medium text-foreground/90"
+                >
+                  Portfolio / website
+                </Label>
+                <Input
+                  id="portfolio_url"
+                  placeholder="https://…"
+                  className={inputClasses}
+                  {...register("portfolio_url")}
+                />
+                {errors.portfolio_url && (
+                  <p className="text-sm text-destructive">
+                    {errors.portfolio_url.message}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -10,6 +10,7 @@ import {
   Loader2,
   Sparkles,
   Download,
+  Trash2,
 } from "lucide-react";
 import {
   Select,
@@ -61,6 +62,8 @@ export default function ApplicationsPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   useEffect(() => {
     applicationsService
@@ -140,6 +143,22 @@ export default function ApplicationsPage() {
     }
   }
 
+  async function handleRemove(id: string) {
+    setRemovingId(id);
+    try {
+      await applicationsService.remove(id);
+      setApplications((prev) => (prev ? prev.filter((a) => a.id !== id) : prev));
+      toast.success("Application removed.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to remove application",
+      );
+    } finally {
+      setRemovingId(null);
+      setConfirmRemoveId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-10">
@@ -195,15 +214,55 @@ export default function ApplicationsPage() {
                       )}
                     </div>
                   </div>
-                  <span className="shrink-0 font-heading text-xl font-medium text-primary tabular-nums">
-                    {Math.round(app.score)}%
-                  </span>
+                  <div className="flex shrink-0 items-start gap-3">
+                    <span className="font-heading text-xl font-medium text-primary tabular-nums">
+                      {Math.round(app.score)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRemoveId(app.id)}
+                      aria-label="Remove application"
+                      className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground">
                   Saved as draft on {formatDateTime(app.created_at)}
                 </p>
 
+                {confirmRemoveId === app.id ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2.5">
+                    <p className="text-[13px] text-foreground">
+                      Remove this application? This can&apos;t be undone.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setConfirmRemoveId(null)}
+                        disabled={removingId === app.id}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleRemove(app.id)}
+                        disabled={removingId === app.id}
+                      >
+                        {removingId === app.id ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Trash2 />
+                        )}
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                 <div className="flex flex-wrap items-center gap-2">
                   <Select
                     value={app.status}
@@ -275,6 +334,7 @@ export default function ApplicationsPage() {
                     </>
                   )}
                 </div>
+                )}
               </div>
             ))}
           </div>

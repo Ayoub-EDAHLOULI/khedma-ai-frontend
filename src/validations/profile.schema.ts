@@ -10,6 +10,11 @@ export const profileFormSchema = z.object({
   cv_text: z.string().min(1, "Paste your CV text"),
   skills: z.array(z.string().min(1)),
   preferred_languages: z.array(z.string()),
+  email: z.union([z.literal(""), z.string().email("Enter a valid email")]),
+  phone: z.string(),
+  linkedin_url: z.union([z.literal(""), z.string().url("Enter a valid URL")]),
+  github_url: z.union([z.literal(""), z.string().url("Enter a valid URL")]),
+  portfolio_url: z.union([z.literal(""), z.string().url("Enter a valid URL")]),
 });
 
 export type ProfileFormValues = z.infer<typeof profileFormSchema>;

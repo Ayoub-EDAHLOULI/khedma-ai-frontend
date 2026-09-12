@@ -16,6 +16,11 @@ export interface Profile {
   skills: string[];
   preferred_languages: string[];
   resume_filename: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  github_url: string | null;
+  portfolio_url: string | null;
   created_at: string;
 }
 
@@ -28,6 +33,11 @@ export interface ProfileInput {
   preferred_languages?: string[];
   resume_docx?: string | null;
   resume_filename?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  github_url?: string | null;
+  portfolio_url?: string | null;
 }
 
 export interface ParsedResume {
@@ -36,6 +46,11 @@ export interface ParsedResume {
   cv_text: string;
   resume_docx?: string | null;
   resume_filename?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  github_url?: string | null;
+  portfolio_url?: string | null;
 }
 
 export interface Job {

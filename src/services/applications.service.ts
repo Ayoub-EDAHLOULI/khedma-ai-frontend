@@ -5,4 +5,5 @@ export const applicationsService = {
   list: () => api.get<Application[]>("/applications"),
   updateStatus: (id: string, status: ApplicationStatus) =>
     api.patch<Application>(`/applications/${id}`, { status }),
+  remove: (id: string) => api.delete<{ deleted: boolean }>(`/applications/${id}`),
 };
