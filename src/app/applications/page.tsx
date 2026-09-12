@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
-import { ArrowLeft, Building2, MapPin, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  MapPin,
+  Loader2,
+  Sparkles,
+  Download,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -11,9 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { applicationsService } from "@/services/applications.service";
+import { matchesService } from "@/services/matches.service";
 import type { Application, ApplicationStatus } from "@/types/api";
 import { cn } from "@/lib/utils";
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 const STATUS_OPTIONS: { value: ApplicationStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
@@ -41,10 +57,10 @@ function locationLabel(job: Application["job"]) {
 }
 
 export default function ApplicationsPage() {
-  const [applications, setApplications] = useState<Application[] | null>(
-    null,
-  );
+  const [applications, setApplications] = useState<Application[] | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
   useEffect(() => {
     applicationsService
@@ -63,13 +79,64 @@ export default function ApplicationsPage() {
       const updated = await applicationsService.updateStatus(id, status);
       setApplications((prev) =>
         prev
-          ? prev.map((a) => (a.id === id ? { ...a, status: updated.status } : a))
+          ? prev.map((a) =>
+              a.id === id ? { ...a, status: updated.status } : a,
+            )
           : prev,
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update status");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update status",
+      );
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  async function handleGenerate(app: Application) {
+    setGeneratingId(app.id);
+    try {
+      const result = await matchesService.prepare(app.match_id);
+      setApplications((prev) =>
+        prev
+          ? prev.map((a) =>
+              a.id === app.id
+                ? {
+                    ...a,
+                    tailored_cv: result.tailored_cv,
+                    cover_letter: result.cover_letter,
+                    status: result.status,
+                  }
+                : a,
+            )
+          : prev,
+      );
+      toast.success("Tailored CV and cover letter ready.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to generate application",
+      );
+    } finally {
+      setGeneratingId(null);
+    }
+  }
+
+  async function handleDownload(
+    app: Application,
+    kind: "resume" | "cover-letter",
+  ) {
+    const key = `${app.id}:${kind}`;
+    setDownloadingKey(key);
+    try {
+      if (kind === "resume") {
+        await matchesService.downloadResume(app.match_id);
+      } else {
+        await matchesService.downloadCoverLetter(app.match_id);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setDownloadingKey(null);
     }
   }
 
@@ -96,8 +163,8 @@ export default function ApplicationsPage() {
 
         {applications !== null && applications.length === 0 && (
           <p className="py-16 text-center text-sm text-muted-foreground">
-            No applications yet. Prepare one from a job&apos;s details to see
-            it here.
+            No applications yet. Prepare one from a job&apos;s details to see it
+            here.
           </p>
         )}
 
@@ -133,29 +200,81 @@ export default function ApplicationsPage() {
                   </span>
                 </div>
 
-                <Select
-                  value={app.status}
-                  onValueChange={(value) =>
-                    handleStatusChange(app.id, value as ApplicationStatus)
-                  }
-                >
-                  <SelectTrigger
-                    disabled={updatingId === app.id}
-                    className={cn(
-                      "w-fit disabled:opacity-50",
-                      statusTone(app.status),
-                    )}
+                <p className="text-xs text-muted-foreground">
+                  Saved as draft on {formatDateTime(app.created_at)}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select
+                    value={app.status}
+                    onValueChange={(value) =>
+                      handleStatusChange(app.id, value as ApplicationStatus)
+                    }
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger
+                      disabled={updatingId === app.id}
+                      className={cn(
+                        "w-fit disabled:opacity-50",
+                        statusTone(app.status),
+                      )}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {!app.tailored_cv && (
+                    <Button
+                      variant="outline"
+                      onClick={() => handleGenerate(app)}
+                      disabled={generatingId === app.id}
+                    >
+                      {generatingId === app.id ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Sparkles />
+                      )}
+                      {generatingId === app.id
+                        ? "Tailoring…"
+                        : "Generate CV & cover letter"}
+                    </Button>
+                  )}
+
+                  {app.tailored_cv && (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDownload(app, "resume")}
+                        disabled={downloadingKey !== null}
+                      >
+                        {downloadingKey === `${app.id}:resume` ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Download />
+                        )}
+                        Resume
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDownload(app, "cover-letter")}
+                        disabled={downloadingKey !== null}
+                      >
+                        {downloadingKey === `${app.id}:cover-letter` ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Download />
+                        )}
+                        Cover letter
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { profileService } from "@/services/profile.service";
 import { searchService } from "@/services/search.service";
+import { matchesService } from "@/services/matches.service";
 import type {
   LocationScope,
   Profile,
@@ -58,6 +59,11 @@ export default function Home() {
     Record<number, ResultsFilter>
   >({});
   const [selectedJob, setSelectedJob] = useState<SearchResultItem | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedMatchIds, setSelectedMatchIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [creatingDrafts, setCreatingDrafts] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -145,6 +151,65 @@ export default function Home() {
 
   const hasSearched = turns.length > 0;
 
+  function toggleMatchSelected(matchId: string) {
+    setSelectedMatchIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(matchId)) {
+        next.delete(matchId);
+      } else {
+        next.add(matchId);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAllInTurn(matchIds: string[]) {
+    setSelectedMatchIds((prev) => {
+      const allSelected = matchIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      for (const id of matchIds) {
+        if (allSelected) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+      }
+      return next;
+    });
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedMatchIds(new Set());
+  }
+
+  async function handleCreateDrafts() {
+    if (selectedMatchIds.size === 0) return;
+    setCreatingDrafts(true);
+    try {
+      const result = await matchesService.bulkDraft([...selectedMatchIds]);
+      const createdCount = result.created.length;
+      const skippedCount = result.already_existed.length;
+      if (createdCount > 0) {
+        toast.success(
+          `Saved ${createdCount} job${createdCount === 1 ? "" : "s"} as draft application${createdCount === 1 ? "" : "s"}.` +
+            (skippedCount > 0
+              ? ` ${skippedCount} already had a draft.`
+              : ""),
+        );
+      } else {
+        toast.info("These jobs already have a draft application.");
+      }
+      exitSelectMode();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create drafts",
+      );
+    } finally {
+      setCreatingDrafts(false);
+    }
+  }
+
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden font-sans">
       {/* Logo — fixed to align with ProfileButton in the same left column */}
@@ -217,23 +282,92 @@ export default function Home() {
                         </p>
                         {turn.results.length > 0 && (
                           <div className="mt-4 flex flex-col gap-3">
-                            <ResultsToolbar
-                              filter={filter}
-                              onChange={(next) =>
-                                setResultFilters((prev) => ({
-                                  ...prev,
-                                  [i]: next,
-                                }))
-                              }
-                              resultCount={visibleResults.length}
-                            />
+                            <div className="flex items-center justify-between gap-2">
+                              <ResultsToolbar
+                                filter={filter}
+                                onChange={(next) =>
+                                  setResultFilters((prev) => ({
+                                    ...prev,
+                                    [i]: next,
+                                  }))
+                                }
+                                resultCount={visibleResults.length}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  selectMode
+                                    ? exitSelectMode()
+                                    : setSelectMode(true)
+                                }
+                                className={cn(
+                                  "shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors",
+                                  selectMode
+                                    ? "border-primary bg-primary/15 text-foreground"
+                                    : "border-border text-muted-foreground hover:text-foreground hover:border-ring",
+                                )}
+                              >
+                                {selectMode ? "Cancel" : "Select"}
+                              </button>
+                            </div>
+
+                            {selectMode && visibleResults.length > 0 && (
+                              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toggleSelectAllInTurn(
+                                      visibleResults.map((r) => r.match_id),
+                                    )
+                                  }
+                                  className="text-[13px] font-medium text-primary hover:underline"
+                                >
+                                  {visibleResults.every((r) =>
+                                    selectedMatchIds.has(r.match_id),
+                                  )
+                                    ? "Deselect all"
+                                    : "Select all"}
+                                </button>
+
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[13px] text-muted-foreground">
+                                    {selectedMatchIds.size} selected
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={handleCreateDrafts}
+                                    disabled={
+                                      selectedMatchIds.size === 0 ||
+                                      creatingDrafts
+                                    }
+                                    className="rounded-full bg-primary px-4 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-50"
+                                  >
+                                    {creatingDrafts
+                                      ? "Saving…"
+                                      : "Save as drafts"}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
                             {visibleResults.length > 0 ? (
                               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {visibleResults.map((item) => (
                                   <MatchCard
                                     key={item.match_id}
                                     item={item}
-                                    onClick={() => setSelectedJob(item)}
+                                    onClick={() =>
+                                      selectMode
+                                        ? toggleMatchSelected(item.match_id)
+                                        : setSelectedJob(item)
+                                    }
+                                    selectable={selectMode}
+                                    selected={selectedMatchIds.has(
+                                      item.match_id,
+                                    )}
+                                    onSelectedChange={() =>
+                                      toggleMatchSelected(item.match_id)
+                                    }
                                   />
                                 ))}
                               </div>

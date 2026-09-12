@@ -104,6 +104,7 @@ export function useGeminiLiveVoice({
 }: UseGeminiLiveVoiceOptions = {}) {
   const [status, setStatus] = useState<GeminiVoiceStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
   const [lastSearchResult, setLastSearchResult] = useState<SearchResult | null>(
     null,
   );
@@ -121,6 +122,31 @@ export function useGeminiLiveVoice({
   const playbackContextRef = useRef<AudioContext | null>(null);
   const playbackCursorRef = useRef(0);
   const playbackSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+
+  // Short, independent chime marking "searching now" — played on its own
+  // gain node rather than mixed into the sequential voice-playback queue, so
+  // it can't push Gemini's speech timing off or get stopped by stopPlayback().
+  const playSearchingChime = useCallback(() => {
+    const ctx = playbackContextRef.current;
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.12, now + 0.02);
+    gain.gain.linearRampToValueAtTime(0, now + 0.22);
+    gain.connect(ctx.destination);
+
+    [880, 1320].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      const startAt = now + i * 0.09;
+      osc.start(startAt);
+      osc.stop(startAt + 0.15);
+    });
+  }, []);
 
   const stopPlayback = useCallback(() => {
     for (const source of playbackSourcesRef.current) {
@@ -181,6 +207,8 @@ export function useGeminiLiveVoice({
       };
     }
 
+    setSearching(true);
+    playSearchingChime();
     try {
       const args = call.args as unknown as SearchJobsArgs;
       const result = await handler(args);
@@ -211,8 +239,10 @@ export function useGeminiLiveVoice({
           error: err instanceof Error ? err.message : "Search failed",
         },
       };
+    } finally {
+      setSearching(false);
     }
-  }, []);
+  }, [playSearchingChime]);
 
   const disconnect = useCallback(() => {
     workletNodeRef.current?.disconnect();
@@ -327,5 +357,5 @@ export function useGeminiLiveVoice({
     }
   }, [disconnect, playAudioChunk, stopPlayback, handleFunctionCall]);
 
-  return { status, error, connect, disconnect, lastSearchResult };
+  return { status, error, searching, connect, disconnect, lastSearchResult };
 }

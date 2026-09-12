@@ -96,3 +96,8 @@ export interface Application {
   status: ApplicationStatus;
   created_at: string;
 }
+
+export interface BulkDraftResult {
+  created: Application[];
+  already_existed: Application[];
+}

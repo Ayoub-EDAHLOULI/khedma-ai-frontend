@@ -1,5 +1,6 @@
 import type { SearchResultItem } from "@/types/api";
-import { MapPin, Building2 } from "lucide-react";
+import { MapPin, Building2, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function locationLabel(job: SearchResultItem["job"]) {
   if (job.is_remote) return "Remote";
@@ -15,9 +16,15 @@ function scoreTone(score: number) {
 export function MatchCard({
   item,
   onClick,
+  selectable = false,
+  selected = false,
+  onSelectedChange,
 }: {
   item: SearchResultItem;
   onClick?: () => void;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectedChange?: (selected: boolean) => void;
 }) {
   const { job, score, reasoning } = item;
   const location = locationLabel(job);
@@ -37,16 +44,40 @@ export function MatchCard({
             }
           : undefined
       }
-      className="group flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5 text-left transition-all hover:border-ring hover:shadow-lg hover:shadow-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+      className={cn(
+        "group flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5 text-left transition-all hover:border-ring hover:shadow-lg hover:shadow-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer",
+        selectable && selected && "border-primary bg-primary/5",
+      )}
     >
       <div className="flex items-start justify-between gap-4">
         <h3 className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-foreground">
           {job.title}
         </h3>
-        <div
-          className={`shrink-0 font-heading text-2xl font-medium leading-none tabular-nums ${scoreTone(score)}`}
-        >
-          {Math.round(score)}%
+        <div className="flex shrink-0 items-center gap-3">
+          <div
+            className={`font-heading text-2xl font-medium leading-none tabular-nums ${scoreTone(score)}`}
+          >
+            {Math.round(score)}%
+          </div>
+          {selectable && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectedChange?.(!selected);
+              }}
+              aria-label={selected ? "Deselect this job" : "Select this job"}
+              aria-pressed={selected}
+              className={cn(
+                "flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+                selected
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background text-transparent hover:border-ring",
+              )}
+            >
+              <Check className="size-3.5" strokeWidth={3} />
+            </button>
+          )}
         </div>
       </div>
 

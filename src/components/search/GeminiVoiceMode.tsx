@@ -23,6 +23,8 @@ const STATUS_LABEL: Record<string, string> = {
   closed: "Session ended",
 };
 
+const SEARCHING_LABEL = "Searching your jobs…";
+
 // Step 2 of the Gemini Live integration: real-time voice conversation with
 // the search_jobs tool wired to our existing /search pipeline — see
 // CLAUDE.md "Future direction — Voice conversation". Gemini only narrates
@@ -32,7 +34,7 @@ export function GeminiVoiceMode({
   onClose,
   onSearchJobs,
 }: GeminiVoiceModeProps) {
-  const { status, error, connect, disconnect, lastSearchResult } =
+  const { status, error, searching, connect, disconnect, lastSearchResult } =
     useGeminiLiveVoice({ onSearchJobs });
 
   useEffect(() => {
@@ -71,9 +73,11 @@ export function GeminiVoiceMode({
         <div
           className={cn(
             "relative size-40 shrink-0 rounded-full",
-            status === "connected"
-              ? "animate-voice-listening"
-              : "animate-voice-idle",
+            searching
+              ? "animate-voice-thinking"
+              : status === "connected"
+                ? "animate-voice-listening"
+                : "animate-voice-idle",
           )}
           style={{
             background:
@@ -90,7 +94,7 @@ export function GeminiVoiceMode({
         </div>
 
         <p className="mt-8 max-w-xl text-center text-sm text-muted-foreground">
-          {error ?? STATUS_LABEL[status]}
+          {error ?? (searching ? SEARCHING_LABEL : STATUS_LABEL[status])}
         </p>
 
         {lastSearchResult && (
