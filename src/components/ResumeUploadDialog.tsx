@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { profileService } from "@/services/profile.service";
+import type { ParsedResume } from "@/types/api";
 
 const ACCEPTED_TYPES = ".pdf,.docx";
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -25,11 +26,16 @@ export const PARSED_RESUME_KEY = "khedma:parsed-resume";
 interface ResumeUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // When provided, a successful parse hands the result directly to the
+  // caller instead of stashing it in sessionStorage and navigating to
+  // /profile — used when the dialog is already opened from the profile page.
+  onParsed?: (parsed: ParsedResume) => void;
 }
 
 export function ResumeUploadDialog({
   open,
   onOpenChange,
+  onParsed,
 }: ResumeUploadDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parsing, setParsing] = useState(false);
@@ -59,9 +65,13 @@ export function ResumeUploadDialog({
     setParsing(true);
     try {
       const parsed = await profileService.parseResume(file);
-      sessionStorage.setItem(PARSED_RESUME_KEY, JSON.stringify(parsed));
       onOpenChange(false);
-      router.push("/profile?fromResume=1");
+      if (onParsed) {
+        onParsed(parsed);
+      } else {
+        sessionStorage.setItem(PARSED_RESUME_KEY, JSON.stringify(parsed));
+        router.push("/profile?fromResume=1");
+      }
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to parse resume",

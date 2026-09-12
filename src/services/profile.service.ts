@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api, API_URL } from "@/lib/api";
 import type { ParsedResume, Profile, ProfileInput } from "@/types/api";
 
 export const profileService = {
@@ -9,4 +9,5 @@ export const profileService = {
     formData.append("file", file);
     return api.postForm<ParsedResume>("/profile/parse-resume", formData);
   },
+  resumeUrl: () => `${API_URL}/profile/resume`,
 };

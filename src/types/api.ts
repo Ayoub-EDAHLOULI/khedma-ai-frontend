@@ -15,6 +15,7 @@ export interface Profile {
   cv_text: string;
   skills: string[];
   preferred_languages: string[];
+  resume_filename: string | null;
   created_at: string;
 }
 

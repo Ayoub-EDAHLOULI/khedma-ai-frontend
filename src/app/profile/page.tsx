@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-toastify";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,10 @@ import {
 import { profileService } from "@/services/profile.service";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { PARSED_RESUME_KEY } from "@/components/ResumeUploadDialog";
+import {
+  PARSED_RESUME_KEY,
+  ResumeUploadDialog,
+} from "@/components/ResumeUploadDialog";
 import type { ParsedResume } from "@/types/api";
 
 const defaultValues: ProfileFormValues = {
@@ -44,10 +47,20 @@ const inputClasses =
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resumeFilename, setResumeFilename] = useState<string | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  // Pending resume file (base64) queued to be sent on next save — either from
+  // the initial upload-and-review handoff, or from re-uploading on this page.
+  // Kept in state (not a ref) since it's read during the submit-handler build,
+  // which counts as render for React's ref-access rules.
+  const [pendingResumeFile, setPendingResumeFile] = useState<{
+    resume_docx?: string | null;
+    resume_filename?: string | null;
+  } | null>(null);
   // React Strict Mode double-invokes effects in dev — this ref makes the
   // sessionStorage read-and-clear idempotent so the second invocation doesn't
   // see it already gone and silently fall back to the plain profile fetch.
-  const parsedResumeRef = useRef<ParsedResume | null | undefined>(undefined);
+  const consumedSessionResumeRef = useRef(false);
 
   const {
     register,
@@ -61,14 +74,15 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    if (parsedResumeRef.current === undefined) {
+    let parsed: ParsedResume | null = null;
+    if (!consumedSessionResumeRef.current) {
+      consumedSessionResumeRef.current = true;
       const parsedRaw = sessionStorage.getItem(PARSED_RESUME_KEY);
-      parsedResumeRef.current = parsedRaw ? JSON.parse(parsedRaw) : null;
-      if (parsedResumeRef.current) {
+      parsed = parsedRaw ? JSON.parse(parsedRaw) : null;
+      if (parsed) {
         sessionStorage.removeItem(PARSED_RESUME_KEY);
       }
     }
-    const parsed = parsedResumeRef.current;
     let cancelled = false;
 
     profileService
@@ -83,7 +97,12 @@ export default function ProfilePage() {
           skills: parsed?.skills?.length ? parsed.skills : profile.skills,
           preferred_languages: profile.preferred_languages,
         });
+        setResumeFilename(parsed?.resume_filename || profile.resume_filename);
         if (parsed) {
+          setPendingResumeFile({
+            resume_docx: parsed.resume_docx,
+            resume_filename: parsed.resume_filename,
+          });
           toast.info("Review the details we found, then save.");
         }
       })
@@ -96,6 +115,11 @@ export default function ProfilePage() {
               full_name: parsed.full_name,
               cv_text: parsed.cv_text,
               skills: parsed.skills,
+            });
+            setResumeFilename(parsed.resume_filename ?? null);
+            setPendingResumeFile({
+              resume_docx: parsed.resume_docx,
+              resume_filename: parsed.resume_filename,
             });
             toast.info("Review the details we found, then save.");
           }
@@ -117,11 +141,10 @@ export default function ProfilePage() {
   async function onSubmit(values: ProfileFormValues) {
     setSaving(true);
     try {
-      const parsed = parsedResumeRef.current;
       await profileService.save({
         ...values,
-        resume_docx: parsed?.resume_docx,
-        resume_filename: parsed?.resume_filename,
+        resume_docx: pendingResumeFile?.resume_docx,
+        resume_filename: pendingResumeFile?.resume_filename,
       });
       toast.success("Profile saved.");
     } catch (err) {
@@ -131,6 +154,21 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleResumeUploaded(parsed: ParsedResume) {
+    reset((current) => ({
+      ...current,
+      full_name: parsed.full_name || current.full_name,
+      cv_text: parsed.cv_text || current.cv_text,
+      skills: parsed.skills?.length ? parsed.skills : current.skills,
+    }));
+    setPendingResumeFile({
+      resume_docx: parsed.resume_docx,
+      resume_filename: parsed.resume_filename,
+    });
+    setResumeFilename(parsed.resume_filename ?? null);
+    toast.info("Review the details we found, then save.");
   }
 
   if (loading) {
@@ -238,6 +276,55 @@ export default function ProfilePage() {
 
           <Card>
             <CardHeader>
+              <CardTitle>Resume</CardTitle>
+              <CardDescription>
+                The file we parsed your details from. Used to generate tailored
+                applications.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {resumeFilename ? (
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-muted px-4 py-3.5">
+                  <FileText className="size-5 shrink-0 text-primary" />
+                  <a
+                    href={profileService.resumeUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 truncate text-[15px] text-foreground underline-offset-4 hover:underline"
+                  >
+                    {resumeFilename}
+                  </a>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUploadOpen(true)}
+                    className="shrink-0 rounded-full"
+                  >
+                    Update
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border px-4 py-3.5">
+                  <p className="text-[15px] text-muted-foreground">
+                    No resume uploaded yet.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUploadOpen(true)}
+                    className="shrink-0 rounded-full"
+                  >
+                    Upload
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Experience</CardTitle>
               <CardDescription>
                 Used to match and tailor applications to real postings.
@@ -294,6 +381,12 @@ export default function ProfilePage() {
           </Button>
         </form>
       </main>
+
+      <ResumeUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onParsed={handleResumeUploaded}
+      />
     </div>
   );
 }
