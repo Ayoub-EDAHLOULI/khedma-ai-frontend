@@ -1,6 +1,7 @@
 import type { ApiResponse } from "@/types/api";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export class ApiError extends Error {
   status: number;
@@ -77,7 +78,11 @@ export const api = {
   downloadFile: async (path: string, filename: string) => {
     const response = await fetch(`${API_URL}${path}`);
     if (!response.ok) {
-      throw new ApiError(`Download failed (${response.status})`, response.status, []);
+      throw new ApiError(
+        `Download failed (${response.status})`,
+        response.status,
+        [],
+      );
     }
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
