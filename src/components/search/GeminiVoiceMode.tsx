@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import {
   useGeminiLiveVoice,
   type SearchJobsArgs,
 } from "@/hooks/useGeminiLiveVoice";
-import { MatchCard } from "@/components/search/MatchCard";
+import { SelectableResults } from "@/components/search/SelectableResults";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { SearchResult } from "@/types/api";
 
@@ -56,9 +57,21 @@ export function GeminiVoiceMode({
     onClose();
   }
 
+  const ended = status === "closed" || status === "error";
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       <div className="page-glow" />
+
+      <button
+        type="button"
+        onClick={handleClose}
+        aria-label="Back to search"
+        className="absolute top-6 left-6 z-20 flex items-center gap-1.5 rounded-full py-2 pl-2 pr-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Back to search
+      </button>
 
       <button
         type="button"
@@ -97,16 +110,21 @@ export function GeminiVoiceMode({
           {error ?? (searching ? SEARCHING_LABEL : STATUS_LABEL[status])}
         </p>
 
+        {ended && (
+          <Button onClick={handleClose} className="mt-5 rounded-full px-6">
+            <ArrowLeft data-icon="inline-start" />
+            Back to search
+          </Button>
+        )}
+
         {lastSearchResult && (
           <div className="mt-8 w-full max-w-xl">
             <p className="text-foreground leading-relaxed font-arabic-aware">
               {lastSearchResult.reply}
             </p>
             {lastSearchResult.results.length > 0 && (
-              <div className="mt-4 grid gap-1">
-                {lastSearchResult.results.map((item) => (
-                  <MatchCard key={item.match_id} item={item} />
-                ))}
+              <div className="mt-4">
+                <SelectableResults results={lastSearchResult.results} />
               </div>
             )}
           </div>
