@@ -149,13 +149,12 @@ export default function Home() {
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden font-sans">
       {/* Logo — fixed to align with ProfileButton in the same left column */}
       <div className="fixed top-4 left-4 z-20 sm:top-6 sm:left-6">
-        <div className="logo-glow" />
         <Image
           src="/logo.png"
           alt="Khedma.ai"
           width={40}
           height={40}
-          className="relative rounded-full size-8 object-cover sm:size-10"
+          className="relative size-8 object-cover sm:size-10"
           priority
         />
       </div>
