@@ -149,3 +149,17 @@ export interface InterviewSession {
   status: InterviewSessionStatus;
   created_at: string;
 }
+
+export type InterviewSpeaker = "interviewer" | "candidate";
+
+export interface InterviewTurnInput {
+  speaker: InterviewSpeaker;
+  content: string;
+}
+
+export interface InterviewTurn {
+  id: string;
+  speaker: InterviewSpeaker;
+  content: string;
+  created_at: string;
+}
