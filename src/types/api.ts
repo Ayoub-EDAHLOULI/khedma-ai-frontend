@@ -116,3 +116,36 @@ export interface BulkDraftResult {
   created: Application[];
   already_existed: Application[];
 }
+
+export interface ManualJobInput {
+  title: string;
+  company?: string | null;
+  description: string;
+  scope: LocationScope;
+}
+
+export interface ManualJobResult {
+  job: Job;
+  match_id: string;
+}
+
+export type InterviewType = "hr" | "technical" | "manager";
+export type InterviewLanguage = "darija" | "fr" | "ar" | "en";
+export type InterviewSessionStatus = "setup" | "active" | "completed";
+
+export interface InterviewSessionInput {
+  job_id: string;
+  interview_type: InterviewType;
+  language: InterviewLanguage;
+  scope: LocationScope;
+}
+
+export interface InterviewSession {
+  id: string;
+  job: Job;
+  interview_type: InterviewType;
+  language: InterviewLanguage;
+  scope: LocationScope;
+  status: InterviewSessionStatus;
+  created_at: string;
+}

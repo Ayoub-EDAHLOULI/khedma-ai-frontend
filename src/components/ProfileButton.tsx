@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { User, FileStack } from "lucide-react";
+import { User, FileStack, MessagesSquare } from "lucide-react";
 
 export function ProfileButton() {
   return (
@@ -17,6 +17,13 @@ export function ProfileButton() {
         className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent"
       >
         <FileStack className="size-5" />
+      </Link>
+      <Link
+        href="/interview"
+        aria-label="Practice an interview"
+        className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent"
+      >
+        <MessagesSquare className="size-5" />
       </Link>
     </div>
   );
