@@ -202,6 +202,11 @@ export function useInterviewVoice({
               playAudioChunk(audioData);
             }
 
+            // The candidate's own turn boundary has no server-side
+            // "turnComplete" equivalent (the server only knows when it
+            // stops generating, not when the user stops talking) — its
+            // per-chunk `finished` flag (VAD-based end-of-speech) is the
+            // real signal here, so flush on it as before.
             const inputChunk = content?.inputTranscription;
             if (inputChunk?.text) {
               pendingInputRef.current += inputChunk.text;
@@ -211,18 +216,16 @@ export function useInterviewVoice({
               pendingInputRef.current = "";
             }
 
+            // The interviewer's (model's) side is different: its
+            // transcription chunk's own `finished` flag marks the end of
+            // one audio segment, not the end of its whole spoken turn —
+            // flushing on it splits one continuous response into several
+            // transcript rows. `turnComplete` on serverContent ("the model
+            // is done generating") is the real signal for this side.
             const outputChunk = content?.outputTranscription;
             if (outputChunk?.text) {
               pendingOutputRef.current += outputChunk.text;
             }
-            if (outputChunk?.finished && pendingOutputRef.current.trim()) {
-              persistTurn("interviewer", pendingOutputRef.current);
-              pendingOutputRef.current = "";
-            }
-
-            // Some turns end without an explicit `finished` flag on the
-            // last chunk — flush whatever's pending when the model
-            // considers its turn complete, as a safety net.
             if (content?.turnComplete && pendingOutputRef.current.trim()) {
               persistTurn("interviewer", pendingOutputRef.current);
               pendingOutputRef.current = "";
