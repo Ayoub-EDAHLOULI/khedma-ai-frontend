@@ -163,3 +163,20 @@ export interface InterviewTurn {
   content: string;
   created_at: string;
 }
+
+export interface InterviewQuestionFeedback {
+  question: string;
+  candidate_answer: string;
+  feedback: string;
+  better_answer: string;
+}
+
+export interface InterviewFeedback {
+  id: string;
+  session_id: string;
+  overall_score: number;
+  strengths: string;
+  weaknesses: string;
+  per_question_feedback: InterviewQuestionFeedback[];
+  created_at: string;
+}

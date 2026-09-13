@@ -9,13 +9,14 @@ import {
   Loader2,
   MapPin,
   PhoneOff,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { interviewsService } from "@/services/interviews.service";
 import { useInterviewVoice } from "@/hooks/useInterviewVoice";
 import { cn } from "@/lib/utils";
-import type { InterviewSession } from "@/types/api";
+import type { InterviewFeedback, InterviewSession, InterviewTurn } from "@/types/api";
 
 function locationLabel(job: InterviewSession["job"]) {
   if (job.is_remote) return "Remote";
@@ -52,15 +53,33 @@ export default function InterviewSessionPage({
   const [session, setSession] = useState<InterviewSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [ending, setEnding] = useState(false);
+  const [pastTurns, setPastTurns] = useState<InterviewTurn[]>([]);
+  const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
+  const [scoring, setScoring] = useState(false);
 
-  const { status, error, turns, connect, disconnect } = useInterviewVoice({
+  const { status, error, turns: liveTurns, connect, disconnect } = useInterviewVoice({
     sessionId: id,
   });
 
   useEffect(() => {
     interviewsService
       .get(id)
-      .then(setSession)
+      .then((s) => {
+        setSession(s);
+        // A completed session's live-hook turns are always empty (nothing
+        // was connected this page load) — load the real persisted
+        // transcript instead so the page still shows it after a refresh.
+        if (s.status === "completed") {
+          interviewsService.listTurns(id).then(setPastTurns).catch(() => {});
+          interviewsService
+            .getFeedback(id)
+            .then(setFeedback)
+            .catch(() => {
+              // No report yet is expected for a session that was ended but
+              // never scored (e.g. the page was closed before scoring ran).
+            });
+        }
+      })
       .catch((err) =>
         toast.error(
           err instanceof Error ? err.message : "Failed to load the session",
@@ -68,6 +87,8 @@ export default function InterviewSessionPage({
       )
       .finally(() => setLoading(false));
   }, [id]);
+
+  const turns = pastTurns.length > 0 ? pastTurns : liveTurns;
 
   // The voice-token endpoint flips the session to "active" server-side as
   // soon as it's minted, but this page's own session state was only fetched
@@ -89,8 +110,25 @@ export default function InterviewSessionPage({
       toast.error(
         err instanceof Error ? err.message : "Failed to end the session",
       );
-    } finally {
       setEnding(false);
+      return;
+    }
+    setEnding(false);
+
+    // Scoring is a separate, one-shot step from the live voice layer — run
+    // it right after the call ends rather than requiring a second manual
+    // action, but keep it visibly its own loading state ("Generating your
+    // report…"), not part of "ending the call".
+    setScoring(true);
+    try {
+      const report = await interviewsService.score(id);
+      setFeedback(report);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to generate the report",
+      );
+    } finally {
+      setScoring(false);
     }
   }
 
@@ -201,6 +239,82 @@ export default function InterviewSessionPage({
                   </Button>
                 )}
               </div>
+            )}
+
+            {scoring && (
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-10 text-sm text-muted-foreground">
+                <Loader2 className="size-5 animate-spin text-primary" />
+                Generating your report…
+              </div>
+            )}
+
+            {feedback && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Interview report</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="font-heading text-4xl font-medium text-primary tabular-nums">
+                      {Math.round(feedback.overall_score)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Overall score out of 100.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Strengths
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground">
+                      {feedback.strengths}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Weaknesses
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground">
+                      {feedback.weaknesses}
+                    </p>
+                  </div>
+
+                  {feedback.per_question_feedback.length > 0 && (
+                    <div className="flex flex-col gap-4">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Question by question
+                      </p>
+                      {feedback.per_question_feedback.map((item, i) => (
+                        <div
+                          key={i}
+                          className="flex flex-col gap-2.5 rounded-xl border border-border p-4"
+                        >
+                          <p className="text-sm font-medium text-foreground">
+                            {item.question}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            <span className="text-foreground/70">
+                              Your answer:{" "}
+                            </span>
+                            {item.candidate_answer}
+                          </p>
+                          <p className="text-sm text-foreground">
+                            {item.feedback}
+                          </p>
+                          <div className="flex items-start gap-2 rounded-lg bg-primary/10 px-3 py-2.5">
+                            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                            <p className="text-sm text-foreground">
+                              {item.better_answer}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
 
             {turns.length > 0 && (

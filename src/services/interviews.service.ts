@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type {
+  InterviewFeedback,
   InterviewSession,
   InterviewSessionInput,
   InterviewTurn,
@@ -19,4 +20,8 @@ export const interviewsService = {
     api.get<InterviewTurn[]>(`/interviews/${sessionId}/turns`),
   end: (sessionId: string) =>
     api.post<InterviewSession>(`/interviews/${sessionId}/end`),
+  score: (sessionId: string) =>
+    api.post<InterviewFeedback>(`/interviews/${sessionId}/score`),
+  getFeedback: (sessionId: string) =>
+    api.get<InterviewFeedback>(`/interviews/${sessionId}/feedback`),
 };
